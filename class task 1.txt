@@ -1,0 +1,149 @@
+Task 278:
+
+
+START
+BEGIN
+
+ 
+    CLASS Species
+        ATTRIBUTES:
+            speciesName : String
+            careRequirements : String
+
+        CONSTRUCTOR(name, reqs)
+            SET speciesName = name
+            SET careRequirements = reqs
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Treatment
+        ATTRIBUTES:
+            treatmentID : Integer
+            treatmentName : String
+            cost : Double
+
+        CONSTRUCTOR(id, name, price)
+            SET treatmentID = id
+            SET treatmentName = name
+            SET cost = price
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Examination
+        ATTRIBUTES:
+            examID : Integer
+            diagnosis : String
+            heartRate : Integer       
+            temperature : Double      
+            isUrgent : Boolean
+            treatmentsPrescribed : List of Treatment
+
+        CONSTRUCTOR(id, diag, hr, temp)
+            SET examID = id
+            SET diagnosis = diag
+            SET heartRate = hr
+            SET temperature = temp
+            SET isUrgent = FALSE 
+            SET treatmentsPrescribed = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD checkVitals()
+            IF heartRate < 60 OR heartRate > 140 OR temperature < 38.0 OR temperature > 39.2 THEN
+                SET isUrgent = TRUE
+            ELSE
+                SET isUrgent = FALSE
+            ENDIF
+        ENDMETHOD
+
+        METHOD addTreatment(treatmentObject)
+            ADD treatmentObject TO treatmentsPrescribed
+        ENDMETHOD
+
+        METHOD getVisitTotal()
+            SET total = 0.0
+            SET listSize = SIZE OF treatmentsPrescribed
+            
+            REPEAT FROM i = 0 TO listSize - 1
+                SET currentTreatment = treatmentsPrescribed[i]
+                SET total = total + currentTreatment.cost
+            ENDREPEAT
+            
+            RETURN total
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Pet
+        ATTRIBUTES:
+            petID : Integer
+            name : String
+            dateOfBirth : Integer     
+            speciesInfo : Species
+            medicalHistory : List of Examination
+
+        CONSTRUCTOR(id, petName, birthYear, speciesObj)
+            SET petID = id
+            SET name = petName
+            SET dateOfBirth = birthYear
+            SET speciesInfo = speciesObj
+            SET medicalHistory = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD calculateAge(currentYear)
+            RETURN currentYear - dateOfBirth
+        ENDMETHOD
+
+        METHOD addExaminationToHistory(examObject)
+            ADD examObject TO medicalHistory
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Owner
+        ATTRIBUTES:
+            ownerID : Integer
+            name : String
+            phoneNumber : String
+            petsList : List of Pet
+
+        CONSTRUCTOR(id, ownerName, phone)
+            SET ownerID = id
+            SET name = ownerName
+            SET phoneNumber = phone
+            SET petsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addPet(petObject)
+            ADD petObject TO petsList
+        ENDMETHOD
+    ENDCLASS
+
+
+    CREATE CatSpecies FROM Species("Feline (Cat)", "Requires annual vaccination")
+
+    CREATE Treat_1 FROM Treatment(901, "Antibiotic Injection", 15.50)
+    CREATE Treat_2 FROM Treatment(902, "IV Fluid Therapy", 25.00)
+
+    CREATE Exam_1 FROM Examination(4401, "Severe Infection", 155, 40.1)
+    
+    CALL Exam_1.addTreatment(Treat_1)
+    CALL Exam_1.addTreatment(Treat_2)
+    
+    CALL Exam_1.checkVitals()
+
+    CREATE Pet_Leo FROM Pet(5510, "Leo", 2022, CatSpecies)
+    CALL Pet_Leo.addExaminationToHistory(Exam_1)
+
+    CREATE Owner_Monther FROM Owner(1002, "Monther Al-Waili", "+96899998888")
+    CALL Owner_Monther.addPet(Pet_Leo)
+
+
+    DISPLAY "--- Veterinary Clinic Visit Summary (Repeat From Mode) ---"
+    DISPLAY "Pet Owner: " + Owner_Monther.name
+    DISPLAY "Pet Name: " + Pet_Leo.name + " | Species: " + Pet_Leo.speciesInfo.speciesName
+    DISPLAY "Derived Pet Age: " + CALL Pet_Leo.calculateAge(2026) + " years old"
+    DISPLAY "--- Examination Details ---"
+    DISPLAY "Diagnosis: " + Exam_1.diagnosis
+    DISPLAY "Is Visit Urgent? : " + Exam_1.isUrgent
+    DISPLAY "Total Dynamic Prescribed Bill: OMR " + CALL Exam_1.getVisitTotal()
+
+END
+STOP
