@@ -6,7 +6,7 @@ BEGIN
 
  
     CLASS Species
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             speciesName : String
             careRequirements : String
 
@@ -17,7 +17,7 @@ BEGIN
     ENDCLASS
 
     CLASS Treatment
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             treatmentID : Integer
             treatmentName : String
             cost : Double
@@ -30,7 +30,7 @@ BEGIN
     ENDCLASS
 
     CLASS Examination
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             examID : Integer
             diagnosis : String
             heartRate : Integer       
@@ -73,7 +73,7 @@ BEGIN
     ENDCLASS
 
     CLASS Pet
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             petID : Integer
             name : String
             dateOfBirth : Integer     
@@ -98,7 +98,7 @@ BEGIN
     ENDCLASS
 
     CLASS Owner
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             ownerID : Integer
             name : String
             phoneNumber : String
@@ -159,7 +159,7 @@ Task 279:
 START
 BEGIN
     CLASS Screen
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             screenID : Integer
             seatingLayout : String
             fixedCapacity : Integer
@@ -172,7 +172,7 @@ BEGIN
     ENDCLASS
 
     CLASS Film
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             filmID : Integer
             title : String
             durationInMinutes : Integer
@@ -187,7 +187,7 @@ BEGIN
     ENDCLASS
 
     CLASS Ticket
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             ticketID : Integer
             seatNumber : String
             price : Double
@@ -200,7 +200,7 @@ BEGIN
     ENDCLASS
 
     CLASS Showtime
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             showtimeID : Integer
             filmInfo : Film
             screenInfo : Screen
@@ -270,7 +270,7 @@ Task 280:
 START
 BEGIN
     CLASS Vendor
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             vendorID : Integer
             name : String
             reliabilityRating : Double
@@ -283,7 +283,7 @@ BEGIN
     ENDCLASS
 
     CLASS StorageBin
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             binID : Integer
             locationCode : String
             currentQty : Integer
@@ -296,7 +296,7 @@ BEGIN
     ENDCLASS
 
     CLASS Product
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             productID : Integer
             name : String
             vendorInfo : Vendor
@@ -359,7 +359,7 @@ Task 281:
 START
 BEGIN
     CLASS Grade
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             assessmentName : String
             score : Double
             weight : Double 
@@ -372,7 +372,7 @@ BEGIN
     ENDCLASS
 
     CLASS Student
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             studentID : Integer
             name : String
             gradesList : List of Grade
@@ -406,7 +406,7 @@ BEGIN
     ENDCLASS
 
     CLASS SchoolClass
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             classID : String
             subjectName : String
             maxSize : Integer
@@ -453,7 +453,7 @@ Task 282:
 START
 BEGIN
     CLASS Coverage
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             coverageType : String
             maxLimit : Double
 
@@ -464,7 +464,7 @@ BEGIN
     ENDCLASS
 
     CLASS Claim
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             claimID : Integer
             status : String 
             approvedAmount : Double
@@ -477,7 +477,7 @@ BEGIN
     ENDCLASS
 
     CLASS InsurancePolicy
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             policyNumber : String
             holderName : String
             coverageDetails : Coverage
