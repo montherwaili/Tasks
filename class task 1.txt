@@ -530,5 +530,628 @@ STOP
 
 
 
+283
+
+START
+BEGIN
+
+    CLASS VehicleModel
+        PRIVATE ATTRIBUTES:
+            modelName : String
+            basePrice : Double
+
+        CONSTRUCTOR(name, base)
+            SET modelName = name
+            SET basePrice = base
+        ENDCONSTRUCTOR
+
+        METHOD getBasePrice()
+            RETURN basePrice
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Vehicle
+        PRIVATE ATTRIBUTES:
+            vinCode : String
+            modelDetails : VehicleModel
+            isAvailable : Boolean
+
+        CONSTRUCTOR(vin, mdl)
+            SET vinCode = vin
+            SET modelDetails = mdl
+            SET isAvailable = TRUE
+        ENDCONSTRUCTOR
+
+        METHOD getIsAvailable()
+            RETURN isAvailable
+        ENDMETHOD
+
+        METHOD sellVehicle()
+            SET isAvailable = FALSE
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS AddOnFeature
+        PRIVATE ATTRIBUTES:
+            featureName : String
+            cost : Double
+
+        CONSTRUCTOR(name, price)
+            SET featureName = name
+            SET cost = price
+        ENDCONSTRUCTOR
+
+        METHOD getCost()
+            RETURN cost
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Customer
+        PRIVATE ATTRIBUTES:
+            customerID : Integer
+            name : String
+
+        CONSTRUCTOR(id, cName)
+            SET customerID = id
+            SET name = cName
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Sale
+        PRIVATE ATTRIBUTES:
+            saleID : Integer
+            customerObj : Customer
+            vehicleObj : Vehicle
+            agreedPrice : Double
+            selectedFeatures : List of AddOnFeature
+
+        CONSTRUCTOR(id, cust, veh, price)
+            SET saleID = id
+            SET customerObj = cust
+            SET vehicleObj = veh
+            SET agreedPrice = price
+            SET selectedFeatures = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addFeature(featureObj)
+            ADD featureObj TO selectedFeatures
+        ENDMETHOD
+
+        METHOD calculateFinalPrice()
+            SET finalTotal = agreedPrice
+            SET totalFeatures = SIZE OF selectedFeatures
+            
+            REPEAT FROM i = 0 TO totalFeatures - 1
+                SET finalTotal = finalTotal + CALL selectedFeatures[i].getCost()
+            ENDREPEAT
+            
+            RETURN finalTotal
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE Model_SUV FROM VehicleModel("Land Cruiser", 25000.00)
+    CREATE Car_1 FROM Vehicle("VIN12345", Model_SUV)
+    CREATE Cust_Ahmed FROM Customer(401, "Ahmed Al-Balushi")
+
+    CREATE Deal_1 FROM Sale(8801, Cust_Ahmed, Car_1, 26000.00)
+    CREATE TintFeature FROM AddOnFeature("Window Tinting", 150.00)
+    
+    CALL Deal_1.addFeature(TintFeature)
+    CALL Car_1.sellVehicle() 
+    DISPLAY "Car Availability State: " + CALL Car_1.getIsAvailable()
+    DISPLAY "Total Invoice Price: OMR " + CALL Deal_1.calculateFinalPrice()
+
+END
+STOP
+
+
+
+284
+
+
+START
+BEGIN
+
+    CLASS Vendor
+        PRIVATE ATTRIBUTES:
+            vendorID : Integer
+            name : String
+            specialty : String
+            bookedDatesList : List of String
+
+        CONSTRUCTOR(id, vName, spec)
+            SET vendorID = id
+            SET name = vName
+            SET specialty = spec
+            SET bookedDatesList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS PlanningTask
+        PRIVATE ATTRIBUTES:
+            taskID : Integer
+            description : String
+            cost : Double
+            isDone : Boolean
+            assignedVendor : Vendor
+
+        CONSTRUCTOR(id, desc, price, vnd)
+            SET taskID = id
+            SET description = desc
+            SET cost = price
+            SET assignedVendor = vnd
+            SET isDone = FALSE
+        ENDCONSTRUCTOR
+
+        METHOD getCost()
+            RETURN cost
+        ENDMETHOD
+
+        METHOD getIsDone()
+            RETURN isDone
+        ENDMETHOD
+
+        METHOD markAsComplete()
+            SET isDone = TRUE
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Guest
+        PRIVATE ATTRIBUTES:
+            guestID : Integer
+            fullName : String
+
+        CONSTRUCTOR(id, name)
+            SET guestID = id
+            SET fullName = name
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS WeddingEvent
+        PRIVATE ATTRIBUTES:
+            eventID : Integer
+            coupleName : String
+            budget : Double
+            tasksList : List of PlanningTask
+            guestList : List of Guest
+
+        CONSTRUCTOR(id, couple, bgt)
+            SET eventID = id
+            SET coupleName = couple
+            SET budget = bgt
+            SET tasksList = INITIALIZE EMPTY LIST
+            SET guestList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addTask(taskObj)
+            SET currentSpending = 0.0
+            SET totalTasks = SIZE OF tasksList
+            
+            REPEAT FROM i = 0 TO totalTasks - 1
+                SET currentSpending = currentSpending + CALL tasksList[i].getCost()
+            ENDREPEAT
+
+            IF currentSpending + CALL taskObj.getCost() > budget THEN
+                DISPLAY "Error: Task rejected! Spending exceeds the set budget limit."
+                RETURN FALSE
+            ENDIF
+
+            ADD taskObj TO tasksList
+            RETURN TRUE
+        ENDMETHOD
+
+        METHOD calculateCompletionPercentage()
+            SET totalTasks = SIZE OF tasksList
+            IF totalTasks == 0 THEN
+                RETURN 0.0
+            ENDIF
+
+            SET doneCount = 0
+            REPEAT FROM i = 0 TO totalTasks - 1
+                IF CALL tasksList[i].getIsDone() == TRUE THEN
+                    SET doneCount = doneCount + 1
+                ENDIF
+            ENDREPEAT
+
+            RETURN (doneCount / totalTasks) * 100.0
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE CakeVendor FROM Vendor(55, "Sweet Delights", "Catering")
+    CREATE Event_1 FROM WeddingEvent(7701, "Sara & Ali", 5000.00)
+
+    CREATE Task_1 FROM PlanningTask(1, "Wedding Cake Setup", 600.00, CakeVendor)
+    CREATE Task_2 FROM PlanningTask(2, "Luxury Venue Rental", 4800.00, NULL) 
+
+    CALL Event_1.addTask(Task_1)
+    CALL Event_1.addTask(Task_2) 
+
+    CALL Task_1.markAsComplete()
+    DISPLAY "Current Event Progress Percentage: " + CALL Event_1.calculateCompletionPercentage() + "%"
+
+END
+STOP
+
+
+
+
+
+285
+
+
+START
+BEGIN
+
+    CLASS Artist
+        PRIVATE ATTRIBUTES:
+            artistID : Integer
+            name : String
+            genre : String
+
+        CONSTRUCTOR(id, aName, gnr)
+            SET artistID = id
+            SET name = aName
+            SET genre = gnr
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Venue
+        ATTRIBUTES:
+            venueID : Integer
+            name : String
+            maxCapacity : Integer
+
+        CONSTRUCTOR(id, vName, cap)
+            SET venueID = id
+            SET name = vName
+            SET maxCapacity = cap
+        ENDCONSTRUCTOR
+
+        METHOD getMaxCapacity()
+            RETURN maxCapacity
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS PriceTier
+        PRIVATE ATTRIBUTES:
+            tierName : String
+            tierPrice : Double
+
+        CONSTRUCTOR(name, price)
+            SET tierName = name
+            SET tierPrice = price
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Ticket
+        PRIVATE ATTRIBUTES:
+            ticketID : Integer
+            seatCode : String
+            tierDetails : PriceTier
+
+        CONSTRUCTOR(id, seat, tier)
+            SET ticketID = id
+            SET seatCode = seat
+            SET tierDetails = tier
+        ENDCONSTRUCTOR
+
+        METHOD getSeatCode()
+            RETURN seatCode
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Concert
+        PRIVATE ATTRIBUTES:
+            concertID : Integer
+            artistInfo : Artist
+            venueInfo : Venue
+            concertDate : String
+            soldTicketsList : List of Ticket
+
+        CONSTRUCTOR(id, art, ven, cDate)
+            SET concertID = id
+            SET artistInfo = art
+            SET venueInfo = ven
+            SET concertDate = cDate
+            SET soldTicketsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD calculateRemainingTickets()
+            SET totalSold = SIZE OF soldTicketsList
+            SET venueCapacity = CALL venueInfo.getMaxCapacity()
+            RETURN venueCapacity - totalSold
+        ENDMETHOD
+
+        METHOD sellTicket(newTicketObj)
+            SET totalSold = SIZE OF soldTicketsList
+            SET isSeatTaken = FALSE
+            
+            REPEAT FROM i = 0 TO totalSold - 1
+                IF CALL soldTicketsList[i].getSeatCode() == CALL newTicketObj.getSeatCode() THEN
+                    SET isSeatTaken = TRUE
+                ENDIF
+            ENDREPEAT
+
+            IF isSeatTaken == TRUE THEN
+                DISPLAY "Error: Transaction Failed! Seat is already reserved."
+                RETURN FALSE
+            ENDIF
+
+            ADD newTicketObj TO soldTicketsList
+            RETURN TRUE
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE Singer FROM Artist(99, "Maher Zain", "Islamic")
+    CREATE OperaHouse FROM Venue(12, "Royal Opera House Muscat", 4) 
+    CREATE Show_Ramadan FROM Concert(4002, Singer, OperaHouse, "2026-03-20")
+
+    CREATE VIP_Tier FROM PriceTier("VIP", 50.00)
+    CREATE Tkt_Fan1 FROM Ticket(550, "RowA-01", VIP_Tier)
+    CREATE Tkt_Fan2 FROM Ticket(551, "RowA-01", VIP_Tier) 
+
+    CALL Show_Ramadan.sellTicket(Tkt_Fan1)
+    CALL Show_Ramadan.sellTicket(Tkt_Fan2) 
+
+    DISPLAY "Available Concert Tickets Remaining: " + CALL Show_Ramadan.calculateRemainingTickets()
+
+END
+STOP
+
+
+286
+
+
+START
+BEGIN
+
+    CLASS Developer
+        PRIVATE ATTRIBUTES:
+            devID : Integer
+            name : String
+            maxCapacity : Integer
+            currentAssignedTasksCount : Integer
+
+        CONSTRUCTOR(id, dName, capacity)
+            SET devID = id
+            SET name = dName
+            SET maxCapacity = capacity
+            SET currentAssignedTasksCount = 0
+        ENDCONSTRUCTOR
+
+        METHOD hasCapacity()
+            IF currentAssignedTasksCount < maxCapacity THEN
+                RETURN TRUE
+            ELSE
+                RETURN FALSE
+            ENDIF
+        ENDMETHOD
+
+        METHOD incrementWorkload()
+            SET currentAssignedTasksCount = currentAssignedTasksCount + 1
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Task
+        PRIVATE ATTRIBUTES:
+            taskID : Integer
+            title : String
+            stage : Integer 
+            assignedDev : Developer
+
+        CONSTRUCTOR(id, tlt, devObj)
+            SET taskID = id
+            SET title = tlt
+            SET assignedDev = devObj
+            SET stage = 1 
+
+        ENDCONSTRUCTOR
+
+        METHOD getStage()
+            RETURN stage
+        ENDMETHOD
+
+        METHOD advanceStage(nextStage)
+            IF nextStage == 4 AND stage < 3 THEN
+                DISPLAY "Task Rejected: Cannot complete a task that hasn't passed the Review stage!"
+                RETURN FALSE
+            ENDIF
+            SET stage = nextStage
+            RETURN TRUE
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Sprint
+        PRIVATE ATTRIBUTES:
+            sprintID : Integer
+            sprintName : String
+            sprintTasksList : List of Task
+
+        CONSTRUCTOR(id, name)
+            SET sprintID = id
+            SET sprintName = name
+            SET sprintTasksList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addTaskToSprint(taskObj)
+            IF CALL taskObj.assignedDev.hasCapacity() == TRUE THEN
+                ADD taskObj TO sprintTasksList
+                CALL taskObj.assignedDev.incrementWorkload()
+                RETURN TRUE
+            ELSE
+                DISPLAY "Sprint Error: Developer capacity exceeded for this sprint!"
+                RETURN FALSE
+            ENDIF
+        ENDMETHOD
+
+        METHOD calculateProgress()
+            SET totalTasks = SIZE OF sprintTasksList
+            IF totalTasks == 0 THEN
+                RETURN 0.0
+            ENDIF
+
+            SET completedCount = 0
+            REPEAT FROM i = 0 TO totalTasks - 1
+                IF CALL sprintTasksList[i].getStage() == 4 THEN
+                    SET completedCount = completedCount + 1
+                ENDIF
+            ENDREPEAT
+
+            RETURN (completedCount / totalTasks) * 100.0
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE Dev_Monther FROM Developer(1, "Monther Al-Waili", 1) 
+    
+    CREATE Task_1 FROM Task(101, "Build Login API", Dev_Monther)
+    CREATE Task_2 FROM Task(102, "Setup Database", Dev_Monther) 
+    CREATE Sprint_1 FROM Sprint(55, "Sprint 1: Core Features")
+    
+    CALL Sprint_1.addTaskToSprint(Task_1)
+    CALL Sprint_1.addTaskToSprint(Task_2) 
+
+    CALL Task_1.advanceStage(4) 
+    CALL Task_1.advanceStage(2)
+    CALL Task_1.advanceStage(3)
+    CALL Task_1.advanceStage(4) 
+    DISPLAY "Sprint Live Progress Percentage: " + CALL Sprint_1.calculateProgress() + "%"
+
+END
+STOP
+
+
+
+
+287
+
+START
+BEGIN
+
+    CLASS Crop
+        ATTRIBUTES:
+            cropName : String
+            expectedOutput : Double 
+            waterRequirement : Integer
+
+        CONSTRUCTOR(name, output, water)
+            SET cropName = name
+            SET expectedOutput = output
+            SET waterRequirement = water
+        ENDCONSTRUCTOR
+
+        METHOD getExpectedOutput()
+            RETURN expectedOutput
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Worker
+        PRIVATE ATTRIBUTES:
+            workerID : Integer
+            name : String
+            dailyLimit : Integer
+            currentActivitiesCount : Integer
+
+        CONSTRUCTOR(id, wName, limit)
+            SET workerID = id
+            SET name = wName
+            SET dailyLimit = limit
+            SET currentActivitiesCount = 0
+        ENDCONSTRUCTOR
+
+        METHOD canAcceptWork()
+            IF currentActivitiesCount < dailyLimit THEN
+                RETURN TRUE
+            ELSE
+                RETURN FALSE
+            ENDIF
+        ENDMETHOD
+
+        METHOD incrementDailyWork()
+            SET currentActivitiesCount = currentActivitiesCount + 1
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS FarmActivity
+        PRIVATE ATTRIBUTES:
+            activityType : String 
+            assignedWorker : Worker
+
+        CONSTRUCTOR(type, wrk)
+            SET activityType = type
+            SET assignedWorker = wrk
+        ENDCONSTRUCTOR
+
+        METHOD getActivityType()
+            RETURN activityType
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Field
+        PRIVATE ATTRIBUTES:
+            fieldID : Integer
+            plantedCrop : Crop
+            activitiesLog : List of FarmActivity
+
+        CONSTRUCTOR(id, crp)
+            SET fieldID = id
+            SET plantedCrop = crp
+            SET activitiesLog = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD logActivity(activityObj)
+            IF CALL activityObj.assignedWorker.canAcceptWork() == TRUE THEN
+                ADD activityObj TO activitiesLog
+                CALL activityObj.assignedWorker.incrementDailyWork()
+                DISPLAY "Activity successfully recorded on the field log."
+                RETURN TRUE
+            ELSE
+                DISPLAY "Scheduling Refused: Worker has hit their daily assignment limit!"
+                RETURN FALSE
+            ENDIF
+        ENDMETHOD
+
+        METHOD estimateYield()
+            SET logSize = SIZE OF activitiesLog
+            SET careScore = 0.0
+            
+            REPEAT FROM i = 0 TO logSize - 1
+                IF CALL activitiesLog[i].getActivityType() == "Watering" THEN
+                    SET careScore = careScore + 0.5
+                ENDIF
+                IF CALL activitiesLog[i].getActivityType() == "Fertilizing" THEN
+                    SET careScore = careScore + 0.5
+                ENDIF
+            ENDREPEAT
+
+            
+            IF careScore == 0.0 THEN
+                RETURN CALL plantedCrop.getExpectedOutput() * 0.4 
+            ELSE
+                IF careScore > 1.5 THEN
+                    SET careScore = 1.5
+                ENDIF
+                RETURN CALL plantedCrop.getExpectedOutput() * careScore
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE WheatCrop FROM Crop("Golden Wheat", 500.00, 3)
+    CREATE FarmWorker FROM Worker(12, "Salem Al-Harthy", 1) 
+    CREATE Field_North FROM Field(701, WheatCrop)
+
+    CREATE Act_1 FROM FarmActivity("Watering", FarmWorker)
+    CREATE Act_2 FROM FarmActivity("Fertilizing", FarmWorker) 
+
+    CALL Field_North.logActivity(Act_1)
+    CALL Field_North.logActivity(Act_2) 
+
+    DISPLAY "Calculated Scientific Yield Estimate: " + CALL Field_North.estimateYield() + " KG"
+
+END
+STOP
+
+
+
+
 
 
