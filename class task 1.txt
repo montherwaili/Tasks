@@ -158,6 +158,8 @@ Task 279:
 
 START
 BEGIN
+
+
     CLASS Screen
         PRIVATE ATTRIBUTES:
             screenID : Integer
@@ -169,6 +171,14 @@ BEGIN
             SET seatingLayout = layout
             SET fixedCapacity = capacity
         ENDCONSTRUCTOR
+
+        METHOD getScreenID()
+            RETURN screenID
+        ENDMETHOD
+
+        METHOD getFixedCapacity()
+            RETURN fixedCapacity
+        ENDMETHOD
     ENDCLASS
 
     CLASS Film
@@ -197,6 +207,10 @@ BEGIN
             SET seatNumber = seat
             SET price = prc
         ENDCONSTRUCTOR
+
+        METHOD getSeatNumber()
+            RETURN seatNumber
+        ENDMETHOD
     ENDCLASS
 
     CLASS Showtime
@@ -217,21 +231,38 @@ BEGIN
             SET bookedTickets = INITIALIZE EMPTY LIST
         ENDCONSTRUCTOR
 
+        METHOD getScreenInfo()
+            RETURN screenInfo
+        ENDMETHOD
+
+        METHOD getStartTime()
+            RETURN startTime
+        ENDMETHOD
+
+        METHOD getEndTime()
+            RETURN endTime
+        ENDMETHOD
+
         METHOD calculateAvailableSeats()
             SET totalBooked = SIZE OF bookedTickets
-            RETURN screenInfo.fixedCapacity - totalBooked
+            RETURN CALL screenInfo.getFixedCapacity() - totalBooked
         ENDMETHOD
 
         METHOD bookTicket(ticketObject)
             SET totalBooked = SIZE OF bookedTickets
-            IF totalBooked >= screenInfo.fixedCapacity THEN
+            SET maxCapacity = CALL screenInfo.getFixedCapacity()
+            
+            IF totalBooked >= maxCapacity THEN
                 DISPLAY "Error: Screening room is full!"
                 RETURN FALSE
             ENDIF
 
             SET isSeatTaken = FALSE
             REPEAT FROM i = 0 TO totalBooked - 1
-                IF bookedTickets[i].seatNumber == ticketObject.seatNumber THEN
+                SET currentBookedSeat = CALL bookedTickets[i].getSeatNumber()
+                SET targetBookingSeat = CALL ticketObject.getSeatNumber()
+                
+                IF currentBookedSeat == targetBookingSeat THEN
                     SET isSeatTaken = TRUE
                 ENDIF
             ENDREPEAT
@@ -246,9 +277,54 @@ BEGIN
         ENDMETHOD
     ENDCLASS
 
+    CLASS TheaterSchedule
+        PRIVATE ATTRIBUTES:
+            scheduleID : Integer
+            allShowtimes : List of Showtime
+
+        CONSTRUCTOR(id)
+            SET scheduleID = id
+            SET allShowtimes = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addShowtime(newShowtimeObj)
+            SET totalShows = SIZE OF allShowtimes
+            SET targetScreenID = CALL CALL newShowtimeObj.getScreenInfo().getScreenID()
+            SET newStart = CALL newShowtimeObj.getStartTime()
+            SET newEnd = CALL newShowtimeObj.getEndTime()
+
+            REPEAT FROM i = 0 TO totalShows - 1
+                SET existingShow = allShowtimes[i]
+                SET existingScreenID = CALL CALL existingShow.getScreenInfo().getScreenID()
+                
+                IF existingScreenID == targetScreenID THEN
+                    SET extStart = CALL existingShow.getStartTime()
+                    SET extEnd = CALL existingShow.getEndTime()
+                    
+                    IF newStart < extEnd AND newEnd > extStart THEN
+                        DISPLAY "Scheduling Rejected: Showtime overlaps with an existing movie on Screen " + targetScreenID
+                        RETURN FALSE
+                    ENDIF
+                ENDIF
+            ENDREPEAT
+
+            ADD newShowtimeObj TO allShowtimes
+            DISPLAY "Showtime successfully scheduled and verified."
+            RETURN TRUE
+        ENDMETHOD
+    ENDCLASS
+
+
+    CREATE CinemaManager FROM TheaterSchedule(1)
+
     CREATE CinemaScreen FROM Screen(1, "Standard IMAX", 5)
     CREATE Movie_Dune FROM Film(501, "Dune: Part Two", 166, "Sci-Fi")
-    CREATE Show_1 FROM Showtime(9001, Movie_Dune, CinemaScreen, 1800, 2100)
+    
+    CREATE Show_1 FROM Showtime(9001, Movie_Dune, CinemaScreen, 1400, 1700)
+    CALL CinemaManager.addShowtime(Show_1)
+
+    CREATE Show_2 FROM Showtime(9002, Movie_Dune, CinemaScreen, 1600, 1900)
+    CALL CinemaManager.addShowtime(Show_2) 
 
     CREATE Tkt_1 FROM Ticket(11, "A1", 4.50)
     CREATE Tkt_2 FROM Ticket(12, "A1", 4.50) 
@@ -256,7 +332,8 @@ BEGIN
     CALL Show_1.bookTicket(Tkt_1)
     CALL Show_1.bookTicket(Tkt_2) 
 
-    DISPLAY "Remaining Available Seats: " + CALL Show_1.calculateAvailableSeats()
+    DISPLAY "Remaining Available Seats for Show 1: " + CALL Show_1.calculateAvailableSeats()
+
 END
 STOP
 
@@ -269,6 +346,8 @@ Task 280:
 
 START
 BEGIN
+
+
     CLASS Vendor
         PRIVATE ATTRIBUTES:
             vendorID : Integer
@@ -293,6 +372,14 @@ BEGIN
             SET locationCode = code
             SET currentQty = qty
         ENDCONSTRUCTOR
+
+        METHOD getCurrentQty()
+            RETURN currentQty
+        ENDMETHOD
+
+        METHOD setCurrentQty(newQty)
+            SET currentQty = newQty
+        ENDMETHOD
     ENDCLASS
 
     CLASS Product
@@ -317,23 +404,41 @@ BEGIN
             SET sum = 0
             SET totalBins = SIZE OF binsList
             REPEAT FROM i = 0 TO totalBins - 1
-                SET sum = sum + binsList[i].currentQty
+                SET sum = sum + CALL binsList[i].getCurrentQty()
             ENDREPEAT
             RETURN sum
         ENDMETHOD
 
         METHOD processOutgoingStock(qtyToMove)
             SET currentStock = CALL getTotalStock()
+            
             IF currentStock - qtyToMove < 0 THEN
                 DISPLAY "Transaction Rejected: Insufficient warehouse stock!"
                 RETURN FALSE
-            ELSE
-                SET binsList[0].currentQty = binsList[0].currentQty - qtyToMove
-                DISPLAY "Stock movement approved successfully."
-                RETURN TRUE
             ENDIF
+
+            SET remainingToMove = qtyToMove
+            SET totalBins = SIZE OF binsList
+            
+            REPEAT FROM i = 0 TO totalBins - 1
+                IF remainingToMove > 0 THEN
+                    SET binQty = CALL binsList[i].getCurrentQty()
+                    
+                    IF binQty >= remainingToMove THEN
+                        CALL binsList[i].setCurrentQty(binQty - remainingToMove)
+                        SET remainingToMove = 0
+                    ELSE
+                        SET remainingToMove = remainingToMove - binQty
+                        CALL binsList[i].setCurrentQty(0)
+                    ENDIF
+                ENDIF
+            ENDREPEAT
+
+            DISPLAY "Stock movement approved and distributed across bins successfully."
+            RETURN TRUE
         ENDMETHOD
     ENDCLASS
+
 
     CREATE Supplier FROM Vendor(77, "Tech Logistics", 94.5)
     CREATE Pro_Keyboard FROM Product(101, "Mechanical Keyboard", Supplier)
@@ -345,7 +450,13 @@ BEGIN
     CALL Pro_Keyboard.addStorageBin(Bin_B)
 
     DISPLAY "Initial Total Warehouse Stock: " + CALL Pro_Keyboard.getTotalStock()
-    CALL Pro_Keyboard.processOutgoingStock(90) 
+    
+    CALL Pro_Keyboard.processOutgoingStock(60) 
+
+    DISPLAY "Remaining Bin A Quantity: " + CALL Bin_A.getCurrentQty() 
+    DISPLAY "Remaining Bin B Quantity: " + CALL Bin_B.getCurrentQty() 
+    DISPLAY "Final Safe Stock Level: " + CALL Pro_Keyboard.getTotalStock()
+
 END
 STOP
 
@@ -358,6 +469,7 @@ Task 281:
 
 START
 BEGIN
+
     CLASS Grade
         PRIVATE ATTRIBUTES:
             assessmentName : String
@@ -369,6 +481,68 @@ BEGIN
             SET score = scr
             SET weight = wgt
         ENDCONSTRUCTOR
+
+        METHOD getScore()
+            RETURN score
+        ENDMETHOD
+
+        METHOD getWeight()
+            RETURN weight
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS SchoolClass
+        PRIVATE ATTRIBUTES:
+            classID : String
+            subjectName : String
+            scheduleTime : Integer 
+            maxSize : Integer
+            roster : List of Student
+
+        CONSTRUCTOR(id, sub, time, maxNum)
+            SET classID = id
+            SET subjectName = sub
+            SET scheduleTime = time
+            SET maxSize = maxNum
+            SET roster = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD getClassID()
+            RETURN classID
+        ENDMETHOD
+
+        METHOD getScheduleTime()
+            RETURN scheduleTime
+        ENDMETHOD
+
+        METHOD getRosterSize()
+            RETURN SIZE OF roster
+        ENDMETHOD
+
+        METHOD getMaxSize()
+            RETURN maxSize
+        ENDMETHOD
+
+        METHOD enrollStudent(studentObj)
+            SET currentEnrolled = CALL getRosterSize()
+            SET maxCap = CALL getMaxSize()
+            
+            IF currentEnrolled >= maxCap THEN
+                DISPLAY "Enrollment Terminated: Class capacity exceeded!"
+                RETURN FALSE
+            ENDIF
+
+            SET targetTime = scheduleTime
+            IF CALL studentObj.hasScheduleConflict(targetTime) == TRUE THEN
+                DISPLAY "Enrollment Terminated: Student has a schedule conflict at " + targetTime
+                RETURN FALSE
+            ENDIF
+
+            ADD studentObj TO roster
+            CALL studentObj.addClass(THIS)
+            DISPLAY "Student successfully enrolled in " + classID
+            RETURN TRUE
+        ENDMETHOD
     ENDCLASS
 
     CLASS Student
@@ -376,15 +550,32 @@ BEGIN
             studentID : Integer
             name : String
             gradesList : List of Grade
+            enrolledClasses : List of SchoolClass 
 
         CONSTRUCTOR(id, sName)
             SET studentID = id
             SET name = sName
             SET gradesList = INITIALIZE EMPTY LIST
+            SET enrolledClasses = INITIALIZE EMPTY LIST
         ENDCONSTRUCTOR
 
         METHOD addGrade(gradeObj)
             ADD gradeObj TO gradesList
+        ENDMETHOD
+
+        METHOD addClass(classObj)
+            ADD classObj TO enrolledClasses
+        ENDMETHOD
+
+        METHOD hasScheduleConflict(targetTime)
+            SET totalClasses = SIZE OF enrolledClasses
+            REPEAT FROM i = 0 TO totalClasses - 1
+                SET currentClassTime = CALL enrolledClasses[i].getScheduleTime()
+                IF currentClassTime == targetTime THEN
+                    RETURN TRUE 
+                ENDIF
+            ENDREPEAT
+            RETURN FALSE
         ENDMETHOD
 
         METHOD calculateOverallAverage()
@@ -397,51 +588,34 @@ BEGIN
             ENDIF
 
             REPEAT FROM i = 0 TO totalGrades - 1
-                SET totalPoints = totalPoints + (gradesList[i].score * gradesList[i].weight)
-                SET totalWeights = totalWeights + gradesList[i].weight
+                SET currentScore = CALL gradesList[i].getScore()
+                SET currentWeight = CALL gradesList[i].getWeight()
+                SET totalPoints = totalPoints + (currentScore * currentWeight)
+                SET totalWeights = totalWeights + currentWeight
             ENDREPEAT
             
             RETURN totalPoints / totalWeights
         ENDMETHOD
     ENDCLASS
 
-    CLASS SchoolClass
-        PRIVATE ATTRIBUTES:
-            classID : String
-            subjectName : String
-            maxSize : Integer
-            roster : List of Student
 
-        CONSTRUCTOR(id, sub, maxNum)
-            SET classID = id
-            SET subjectName = sub
-            SET maxSize = maxNum
-            SET roster = INITIALIZE EMPTY LIST
-        ENDCONSTRUCTOR
-
-        METHOD enrollStudent(studentObj)
-            SET currentEnrolled = SIZE OF roster
-            IF currentEnrolled >= maxSize THEN
-                DISPLAY "Enrollment Terminated: Class capacity exceeded!"
-                RETURN FALSE
-            ENDIF
-            ADD studentObj TO roster
-            RETURN TRUE
-        ENDMETHOD
-    ENDCLASS
-
-    CREATE MathClass FROM SchoolClass("MATH-101", "Calculus", 2)
+    CREATE MathClass FROM SchoolClass("MATH-101", "Calculus", 900, 3)
+    CREATE PhysicsClass FROM SchoolClass("PHYS-101", "Physics", 900, 3)
+    
     CREATE Std_Monther FROM Student(7015, "Monther Al-Waili")
     
     CREATE Mark_1 FROM Grade("Midterm Exam", 90.0, 0.40)
     CREATE Mark_2 FROM Grade("Final Project", 95.0, 0.60)
-    
     CALL Std_Monther.addGrade(Mark_1)
     CALL Std_Monther.addGrade(Mark_2)
 
+    CALL MathClass.enrollStudent(Std_Monther)    
+    CALL PhysicsClass.enrollStudent(Std_Monther) 
     DISPLAY "Calculated Weighted Academic Average: " + CALL Std_Monther.calculateOverallAverage()
+
 END
 STOP
+
 
 
 
@@ -452,6 +626,8 @@ Task 282:
 
 START
 BEGIN
+
+
     CLASS Coverage
         PRIVATE ATTRIBUTES:
             coverageType : String
@@ -461,19 +637,42 @@ BEGIN
             SET coverageType = type
             SET maxLimit = limit
         ENDCONSTRUCTOR
+
+        METHOD getMaxLimit()
+            RETURN maxLimit
+        ENDMETHOD
     ENDCLASS
 
     CLASS Claim
         PRIVATE ATTRIBUTES:
             claimID : Integer
-            status : String 
+            statusStage : Integer 
             approvedAmount : Double
 
         CONSTRUCTOR(id, amt)
             SET claimID = id
             SET approvedAmount = amt
-            SET status = "Filed"
+            SET statusStage = 1 
         ENDCONSTRUCTOR
+
+        METHOD getApprovedAmount()
+            RETURN approvedAmount
+        ENDMETHOD
+
+        METHOD getStatusStage()
+            RETURN statusStage
+        ENDMETHOD
+
+        METHOD advanceStatus(nextStage)
+            IF nextStage == statusStage + 1 THEN
+                SET statusStage = nextStage
+                DISPLAY "Claim status successfully advanced to stage: " + statusStage
+                RETURN TRUE
+            ELSE
+                DISPLAY "Transaction Denied: Invalid status sequence progression!"
+                RETURN FALSE
+            ENDIF
+        ENDMETHOD
     ENDCLASS
 
     CLASS InsurancePolicy
@@ -495,37 +694,41 @@ BEGIN
             SET totalClaims = SIZE OF claimsHistory
             
             REPEAT FROM i = 0 TO totalClaims - 1
-                IF claimsHistory[i].status == "Approved" THEN
-                    SET totalDeducted = totalDeducted + claimsHistory[i].approvedAmount
+                IF CALL claimsHistory[i].getStatusStage() >= 3 THEN
+                    SET totalDeducted = totalDeducted + CALL claimsHistory[i].getApprovedAmount()
                 ENDIF
             ENDREPEAT
             
-            RETURN coverageDetails.maxLimit - totalDeducted
+            RETURN CALL coverageDetails.getMaxLimit() - totalDeducted
         ENDMETHOD
 
         METHOD fileClaim(claimObj)
-            IF claimObj.approvedAmount > coverageDetails.maxLimit THEN
+            IF CALL claimObj.getApprovedAmount() > CALL coverageDetails.getMaxLimit() THEN
                 DISPLAY "Claim Refused: Amount exceeds individual coverage limits!"
-                SET claimObj.status = "Rejected"
                 RETURN FALSE
             ENDIF
             
-            SET claimObj.status = "Approved"
             ADD claimObj TO claimsHistory
+            DISPLAY "Claim successfully filed and logged under policy."
             RETURN TRUE
         ENDMETHOD
     ENDCLASS
+
 
     CREATE CarCoverage FROM Coverage("Auto Collision", 5000.00)
     CREATE MyPolicy FROM InsurancePolicy("POL-9942", "Monther Al-Waili", CarCoverage)
     
     CREATE AccidentClaim FROM Claim(7701, 1200.00)
-    CALL MyPolicy.fileClaim(AccidentClaim)
+    CALL MyPolicy.fileClaim(AccidentClaim) 
+
+    CALL AccidentClaim.advanceStatus(3) 
+    CALL AccidentClaim.advanceStatus(2) 
+    CALL AccidentClaim.advanceStatus(3) 
 
     DISPLAY "Remaining Trustworthy Policy Budget: OMR " + CALL MyPolicy.calculateRemainingCoverage()
+
 END
 STOP
-
 
 
 
@@ -554,20 +757,36 @@ BEGIN
         PRIVATE ATTRIBUTES:
             vinCode : String
             modelDetails : VehicleModel
+            listedPrice : Double
             isAvailable : Boolean
 
-        CONSTRUCTOR(vin, mdl)
+        CONSTRUCTOR(vin, mdl, price)
             SET vinCode = vin
             SET modelDetails = mdl
             SET isAvailable = TRUE
+            
+            IF price < CALL mdl.getBasePrice() THEN
+                SET listedPrice = CALL mdl.getBasePrice()
+            ELSE
+                SET listedPrice = price
+            ENDIF
         ENDCONSTRUCTOR
 
         METHOD getIsAvailable()
             RETURN isAvailable
         ENDMETHOD
 
+        METHOD getListedPrice()
+            RETURN listedPrice
+        ENDMETHOD
+
         METHOD sellVehicle()
+            IF isAvailable == FALSE THEN
+                DISPLAY "Transaction Terminated: Vehicle is already sold!"
+                RETURN FALSE
+            ENDIF
             SET isAvailable = FALSE
+            RETURN TRUE
         ENDMETHOD
     ENDCLASS
 
@@ -609,8 +828,13 @@ BEGIN
             SET saleID = id
             SET customerObj = cust
             SET vehicleObj = veh
-            SET agreedPrice = price
             SET selectedFeatures = INITIALIZE EMPTY LIST
+            
+            IF price < CALL veh.getListedPrice() THEN
+                SET agreedPrice = CALL veh.getListedPrice()
+            ELSE
+                SET agreedPrice = price
+            ENDIF
         ENDCONSTRUCTOR
 
         METHOD addFeature(featureObj)
@@ -630,19 +854,22 @@ BEGIN
     ENDCLASS
 
     CREATE Model_SUV FROM VehicleModel("Land Cruiser", 25000.00)
-    CREATE Car_1 FROM Vehicle("VIN12345", Model_SUV)
+    CREATE Car_1 FROM Vehicle("VIN12345", Model_SUV, 24000.00)
     CREATE Cust_Ahmed FROM Customer(401, "Ahmed Al-Balushi")
 
-    CREATE Deal_1 FROM Sale(8801, Cust_Ahmed, Car_1, 26000.00)
+    CREATE Deal_1 FROM Sale(8801, Cust_Ahmed, Car_1, 23000.00)
     CREATE TintFeature FROM AddOnFeature("Window Tinting", 150.00)
     
     CALL Deal_1.addFeature(TintFeature)
+    
     CALL Car_1.sellVehicle() 
-    DISPLAY "Car Availability State: " + CALL Car_1.getIsAvailable()
-    DISPLAY "Total Invoice Price: OMR " + CALL Deal_1.calculateFinalPrice()
+    CALL Car_1.sellVehicle() 
+
+    DISPLAY "Final Protected Invoice Price: OMR " + CALL Deal_1.calculateFinalPrice()
 
 END
 STOP
+
 
 
 
@@ -665,6 +892,20 @@ BEGIN
             SET specialty = spec
             SET bookedDatesList = INITIALIZE EMPTY LIST
         ENDCONSTRUCTOR
+
+        METHOD isAvailable(targetDate)
+            SET totalDates = SIZE OF bookedDatesList
+            REPEAT FROM i = 0 TO totalDates - 1
+                IF bookedDatesList[i] == targetDate THEN
+                    RETURN FALSE
+                ENDIF
+            ENDREPEAT
+            RETURN TRUE
+        ENDMETHOD
+
+        METHOD bookDate(targetDate)
+            ADD targetDate TO bookedDatesList
+        ENDMETHOD
     ENDCLASS
 
     CLASS PlanningTask
@@ -674,12 +915,14 @@ BEGIN
             cost : Double
             isDone : Boolean
             assignedVendor : Vendor
+            taskDate : String
 
-        CONSTRUCTOR(id, desc, price, vnd)
+        CONSTRUCTOR(id, desc, price, vnd, tDate)
             SET taskID = id
             SET description = desc
             SET cost = price
             SET assignedVendor = vnd
+            SET taskDate = tDate
             SET isDone = FALSE
         ENDCONSTRUCTOR
 
@@ -693,6 +936,14 @@ BEGIN
 
         METHOD markAsComplete()
             SET isDone = TRUE
+        ENDMETHOD
+
+        METHOD getAssignedVendor()
+            RETURN assignedVendor
+        ENDMETHOD
+
+        METHOD getTaskDate()
+            RETURN taskDate
         ENDMETHOD
     ENDCLASS
 
@@ -712,13 +963,15 @@ BEGIN
             eventID : Integer
             coupleName : String
             budget : Double
+            eventDate : String
             tasksList : List of PlanningTask
             guestList : List of Guest
 
-        CONSTRUCTOR(id, couple, bgt)
+        CONSTRUCTOR(id, couple, bgt, eDate)
             SET eventID = id
             SET coupleName = couple
             SET budget = bgt
+            SET eventDate = eDate
             SET tasksList = INITIALIZE EMPTY LIST
             SET guestList = INITIALIZE EMPTY LIST
         ENDCONSTRUCTOR
@@ -734,6 +987,16 @@ BEGIN
             IF currentSpending + CALL taskObj.getCost() > budget THEN
                 DISPLAY "Error: Task rejected! Spending exceeds the set budget limit."
                 RETURN FALSE
+            ENDIF
+
+            SET targetVendor = CALL taskObj.getAssignedVendor()
+            IF targetVendor != NULL THEN
+                SET requestedDate = CALL taskObj.getTaskDate()
+                IF CALL targetVendor.isAvailable(requestedDate) == FALSE THEN
+                    DISPLAY "Error: Vendor double-booking prevented for this date!"
+                    RETURN FALSE
+                ENDIF
+                CALL targetVendor.bookDate(requestedDate)
             ENDIF
 
             ADD taskObj TO tasksList
@@ -758,19 +1021,21 @@ BEGIN
     ENDCLASS
 
     CREATE CakeVendor FROM Vendor(55, "Sweet Delights", "Catering")
-    CREATE Event_1 FROM WeddingEvent(7701, "Sara & Ali", 5000.00)
+    CREATE Event_1 FROM WeddingEvent(7701, "Sara & Ali", 5000.00, "2026-10-10")
+    CREATE Event_2 FROM WeddingEvent(7702, "Mona & Maha", 4000.00, "2026-10-10")
 
-    CREATE Task_1 FROM PlanningTask(1, "Wedding Cake Setup", 600.00, CakeVendor)
-    CREATE Task_2 FROM PlanningTask(2, "Luxury Venue Rental", 4800.00, NULL) 
+    CREATE Task_1 FROM PlanningTask(1, "Wedding Cake Event 1", 600.00, CakeVendor, "2026-10-10")
+    CREATE Task_2 FROM PlanningTask(2, "Wedding Cake Event 2", 500.00, CakeVendor, "2026-10-10")
 
     CALL Event_1.addTask(Task_1)
-    CALL Event_1.addTask(Task_2) 
+    CALL Event_2.addTask(Task_2)
 
     CALL Task_1.markAsComplete()
     DISPLAY "Current Event Progress Percentage: " + CALL Event_1.calculateCompletionPercentage() + "%"
 
 END
 STOP
+
 
 
 
@@ -796,19 +1061,35 @@ BEGIN
     ENDCLASS
 
     CLASS Venue
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             venueID : Integer
             name : String
             maxCapacity : Integer
+            bookedDatesList : List of String
 
         CONSTRUCTOR(id, vName, cap)
             SET venueID = id
             SET name = vName
             SET maxCapacity = cap
+            SET bookedDatesList = INITIALIZE EMPTY LIST
         ENDCONSTRUCTOR
 
         METHOD getMaxCapacity()
             RETURN maxCapacity
+        ENDMETHOD
+
+        METHOD isDateAvailable(targetDate)
+            SET totalDates = SIZE OF bookedDatesList
+            REPEAT FROM i = 0 TO totalDates - 1
+                IF bookedDatesList[i] == targetDate THEN
+                    RETURN FALSE
+                ENDIF
+            ENDREPEAT
+            RETURN TRUE
+        ENDMETHOD
+
+        METHOD bookDate(targetDate)
+            ADD targetDate TO bookedDatesList
         ENDMETHOD
     ENDCLASS
 
@@ -856,6 +1137,14 @@ BEGIN
             SET soldTicketsList = INITIALIZE EMPTY LIST
         ENDCONSTRUCTOR
 
+        METHOD getConcertDate()
+            RETURN concertDate
+        ENDMETHOD
+
+        METHOD getVenueInfo()
+            RETURN venueInfo
+        ENDMETHOD
+
         METHOD calculateRemainingTickets()
             SET totalSold = SIZE OF soldTicketsList
             SET venueCapacity = CALL venueInfo.getMaxCapacity()
@@ -882,18 +1171,50 @@ BEGIN
         ENDMETHOD
     ENDCLASS
 
+    CLASS TicketPlatform
+        PRIVATE ATTRIBUTES:
+            platformID : Integer
+            concertsList : List of Concert
+
+        CONSTRUCTOR(id)
+            SET platformID = id
+            SET concertsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD scheduleConcert(concertObj)
+            SET targetVenue = CALL concertObj.getVenueInfo()
+            SET targetDate = CALL concertObj.getConcertDate()
+
+            IF CALL targetVenue.isDateAvailable(targetDate) == FALSE THEN
+                DISPLAY "Scheduling Error: Venue date clash detected!"
+                RETURN FALSE
+            ENDIF
+
+            CALL targetVenue.bookDate(targetDate)
+            ADD concertObj TO concertsList
+            DISPLAY "Concert successfully scheduled."
+            RETURN TRUE
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE CinemaPlatform FROM TicketPlatform(1)
     CREATE Singer FROM Artist(99, "Maher Zain", "Islamic")
-    CREATE OperaHouse FROM Venue(12, "Royal Opera House Muscat", 4) 
-    CREATE Show_Ramadan FROM Concert(4002, Singer, OperaHouse, "2026-03-20")
+    CREATE OperaHouse FROM Venue(12, "Royal Opera House Muscat", 4)
+
+    CREATE Show_1 FROM Concert(4001, Singer, OperaHouse, "2026-12-25")
+    CREATE Show_2 FROM Concert(4002, Singer, OperaHouse, "2026-12-25")
+
+    CALL CinemaPlatform.scheduleConcert(Show_1)
+    CALL CinemaPlatform.scheduleConcert(Show_2)
 
     CREATE VIP_Tier FROM PriceTier("VIP", 50.00)
     CREATE Tkt_Fan1 FROM Ticket(550, "RowA-01", VIP_Tier)
-    CREATE Tkt_Fan2 FROM Ticket(551, "RowA-01", VIP_Tier) 
+    CREATE Tkt_Fan2 FROM Ticket(551, "RowA-01", VIP_Tier)
 
-    CALL Show_Ramadan.sellTicket(Tkt_Fan1)
-    CALL Show_Ramadan.sellTicket(Tkt_Fan2) 
+    CALL Show_1.sellTicket(Tkt_Fan1)
+    CALL Show_1.sellTicket(Tkt_Fan2)
 
-    DISPLAY "Available Concert Tickets Remaining: " + CALL Show_Ramadan.calculateRemainingTickets()
+    DISPLAY "Available Concert Tickets Remaining: " + CALL Show_1.calculateRemainingTickets()
 
 END
 STOP
@@ -944,19 +1265,24 @@ BEGIN
             SET title = tlt
             SET assignedDev = devObj
             SET stage = 1 
-
         ENDCONSTRUCTOR
 
         METHOD getStage()
             RETURN stage
         ENDMETHOD
 
-        METHOD advanceStage(nextStage)
-            IF nextStage == 4 AND stage < 3 THEN
-                DISPLAY "Task Rejected: Cannot complete a task that hasn't passed the Review stage!"
+        METHOD getAssignedDev()
+            RETURN assignedDev
+        ENDMETHOD
+
+        METHOD advanceStage()
+            IF stage == 4 THEN
+                DISPLAY "Task Error: Task is already in the final Complete stage!"
                 RETURN FALSE
             ENDIF
-            SET stage = nextStage
+            
+            SET stage = stage + 1
+            DISPLAY "Task stage successfully advanced to stage: " + stage
             RETURN TRUE
         ENDMETHOD
     ENDCLASS
@@ -974,9 +1300,10 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD addTaskToSprint(taskObj)
-            IF CALL taskObj.assignedDev.hasCapacity() == TRUE THEN
+            SET targetDev = CALL taskObj.getAssignedDev()
+            IF CALL targetDev.hasCapacity() == TRUE THEN
                 ADD taskObj TO sprintTasksList
-                CALL taskObj.assignedDev.incrementWorkload()
+                CALL targetDev.incrementWorkload()
                 RETURN TRUE
             ELSE
                 DISPLAY "Sprint Error: Developer capacity exceeded for this sprint!"
@@ -1001,23 +1328,22 @@ BEGIN
         ENDMETHOD
     ENDCLASS
 
-    CREATE Dev_Monther FROM Developer(1, "Monther Al-Waili", 1) 
+    CREATE Dev_Monther FROM Developer(1, "Monther Al-Waili", 2)
     
     CREATE Task_1 FROM Task(101, "Build Login API", Dev_Monther)
-    CREATE Task_2 FROM Task(102, "Setup Database", Dev_Monther) 
     CREATE Sprint_1 FROM Sprint(55, "Sprint 1: Core Features")
     
     CALL Sprint_1.addTaskToSprint(Task_1)
-    CALL Sprint_1.addTaskToSprint(Task_2) 
 
-    CALL Task_1.advanceStage(4) 
-    CALL Task_1.advanceStage(2)
-    CALL Task_1.advanceStage(3)
-    CALL Task_1.advanceStage(4) 
+    CALL Task_1.advanceStage()
+    CALL Task_1.advanceStage()
+    CALL Task_1.advanceStage()
+
     DISPLAY "Sprint Live Progress Percentage: " + CALL Sprint_1.calculateProgress() + "%"
 
 END
 STOP
+
 
 
 
@@ -1028,7 +1354,7 @@ START
 BEGIN
 
     CLASS Crop
-        ATTRIBUTES:
+        PRIVATE ATTRIBUTES:
             cropName : String
             expectedOutput : Double 
             waterRequirement : Integer
@@ -1041,6 +1367,10 @@ BEGIN
 
         METHOD getExpectedOutput()
             RETURN expectedOutput
+        ENDMETHOD
+
+        METHOD getWaterRequirement()
+            RETURN waterRequirement
         ENDMETHOD
     ENDCLASS
 
@@ -1074,15 +1404,25 @@ BEGIN
     CLASS FarmActivity
         PRIVATE ATTRIBUTES:
             activityType : String 
+            waterAmount : Integer
             assignedWorker : Worker
 
-        CONSTRUCTOR(type, wrk)
+        CONSTRUCTOR(type, amt, wrk)
             SET activityType = type
+            SET waterAmount = amt
             SET assignedWorker = wrk
         ENDCONSTRUCTOR
 
         METHOD getActivityType()
             RETURN activityType
+        ENDMETHOD
+
+        METHOD getWaterAmount()
+            RETURN waterAmount
+        ENDMETHOD
+
+        METHOD getAssignedWorker()
+            RETURN assignedWorker
         ENDMETHOD
     ENDCLASS
 
@@ -1099,15 +1439,27 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD logActivity(activityObj)
-            IF CALL activityObj.assignedWorker.canAcceptWork() == TRUE THEN
-                ADD activityObj TO activitiesLog
-                CALL activityObj.assignedWorker.incrementDailyWork()
-                DISPLAY "Activity successfully recorded on the field log."
-                RETURN TRUE
-            ELSE
+            SET targetWorker = CALL activityObj.getAssignedWorker()
+            
+            IF CALL targetWorker.canAcceptWork() == FALSE THEN
                 DISPLAY "Scheduling Refused: Worker has hit their daily assignment limit!"
                 RETURN FALSE
             ENDIF
+
+            IF CALL activityObj.getActivityType() == "Watering" THEN
+                SET providedWater = CALL activityObj.getWaterAmount()
+                SET requiredWater = CALL plantedCrop.getWaterRequirement()
+                
+                IF providedWater < requiredWater THEN
+                    DISPLAY "Activity Refused: Provided water does not meet crop requirement!"
+                    RETURN FALSE
+                ENDIF
+            ENDIF
+
+            ADD activityObj TO activitiesLog
+            CALL targetWorker.incrementDailyWork()
+            DISPLAY "Activity successfully recorded on the field log."
+            RETURN TRUE
         ENDMETHOD
 
         METHOD estimateYield()
@@ -1123,7 +1475,6 @@ BEGIN
                 ENDIF
             ENDREPEAT
 
-            
             IF careScore == 0.0 THEN
                 RETURN CALL plantedCrop.getExpectedOutput() * 0.4 
             ELSE
@@ -1135,20 +1486,22 @@ BEGIN
         ENDMETHOD
     ENDCLASS
 
-    CREATE WheatCrop FROM Crop("Golden Wheat", 500.00, 3)
-    CREATE FarmWorker FROM Worker(12, "Salem Al-Harthy", 1) 
+    CREATE WheatCrop FROM Crop("Golden Wheat", 500.00, 5)
+    CREATE FarmWorker FROM Worker(12, "Salem Al-Harthy", 2) 
     CREATE Field_North FROM Field(701, WheatCrop)
 
-    CREATE Act_1 FROM FarmActivity("Watering", FarmWorker)
-    CREATE Act_2 FROM FarmActivity("Fertilizing", FarmWorker) 
+    CREATE Act_1 FROM FarmActivity("Watering", 3, FarmWorker) 
+    CREATE Act_2 FROM FarmActivity("Watering", 6, FarmWorker) 
 
-    CALL Field_North.logActivity(Act_1)
+    CALL Field_North.logActivity(Act_1) 
     CALL Field_North.logActivity(Act_2) 
 
     DISPLAY "Calculated Scientific Yield Estimate: " + CALL Field_North.estimateYield() + " KG"
 
 END
 STOP
+
+
 
 
 
