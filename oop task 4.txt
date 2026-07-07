@@ -1,0 +1,251 @@
+Task 288
+
+
+START
+BEGIN
+
+    CLASS Book
+        PRIVATE ATTRIBUTES:
+            bookID : Integer
+            title : String
+            author : String
+            price : Double
+            genre : String
+
+        CONSTRUCTOR(id, tlt, auth, prc, gnr)
+            SET bookID = id
+            SET title = tlt
+            SET author = auth
+            SET price = prc
+            SET genre = gnr
+        ENDCONSTRUCTOR
+
+        METHOD getPrice()
+            RETURN price
+        ENDMETHOD
+
+        METHOD getTitle()
+            RETURN title
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Sale
+        PRIVATE ATTRIBUTES:
+            saleID : Integer
+            bookInfo : Book
+            soldPrice : Double
+            timestamp : String
+
+        CONSTRUCTOR(id, bk, time)
+            SET saleID = id
+            SET bookInfo = bk
+            SET soldPrice = CALL bk.getPrice()
+            SET timestamp = time
+        ENDCONSTRUCTOR
+
+        METHOD getSoldPrice()
+            RETURN soldPrice
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Customer
+        PRIVATE ATTRIBUTES:
+            customerID : Integer
+            name : String
+            purchaseHistory : List of Sale
+
+        CONSTRUCTOR(id, cName)
+            SET customerID = id
+            SET name = cName
+            SET purchaseHistory = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD getName()
+            RETURN name
+        ENDMETHOD
+
+        METHOD addPurchase(saleObj)
+            ADD saleObj TO purchaseHistory
+            DISPLAY "Purchase successfully added to customer history."
+        ENDMETHOD
+
+        METHOD calculateTotalSpent()
+            SET totalSpent = 0.0
+            SET totalPurchases = SIZE OF purchaseHistory
+            
+            REPEAT FROM i = 0 TO totalPurchases - 1
+                SET totalSpent = totalSpent + CALL purchaseHistory[i].getSoldPrice()
+            ENDREPEAT
+            
+            RETURN totalSpent
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE Book_OOP FROM Book(101, "OOP Principles", "Dr. Ahmed", 15.00, "Education")
+    CREATE Book_Git FROM Book(102, "Git Version Control", "Al-Monther", 10.00, "Technology")
+    
+    CREATE Cust_Monther FROM Customer(7015, "Monther Al-Waili")
+
+    CREATE Sale_1 FROM Sale(9001, Book_OOP, "2026-07-07 10:00")
+    CREATE Sale_2 FROM Sale(9002, Book_Git, "2026-07-07 10:05")
+
+    CALL Cust_Monther.addPurchase(Sale_1)
+    CALL Cust_Monther.addPurchase(Sale_2)
+
+    DISPLAY "Customer Name: " + CALL Cust_Monther.getName()
+    DISPLAY "Total Accumulative Spending: OMR " + CALL Cust_Monther.calculateTotalSpent()
+
+END
+STOP
+
+
+
+
+
+
+Task 289
+
+
+START
+BEGIN
+
+    CLASS Question
+        PRIVATE ATTRIBUTES:
+            questionID : Integer
+            text : String
+            correctAnswer : String
+            pointValue : Integer
+
+        CONSTRUCTOR(id, qText, correctAns, points)
+            SET questionID = id
+            SET text = qText
+            SET correctAnswer = correctAns
+            SET pointValue = points
+        ENDCONSTRUCTOR
+
+        METHOD getCorrectAnswer()
+            RETURN correctAnswer
+        ENDMETHOD
+
+        METHOD getPointValue()
+            RETURN pointValue
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Exam
+        PRIVATE ATTRIBUTES:
+            examID : Integer
+            title : String
+            timeLimitInMinutes : Integer
+            questionsList : List of Question
+
+        CONSTRUCTOR(id, tlt, limit)
+            SET examID = id
+            SET title = tlt
+            SET timeLimitInMinutes = limit
+            SET questionsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addQuestion(questionObj)
+            ADD questionObj TO questionsList
+        ENDMETHOD
+
+        METHOD getTimeLimit()
+            RETURN timeLimitInMinutes
+        ENDMETHOD
+
+        METHOD getQuestionsList()
+            RETURN questionsList
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS ExamAttempt
+        PRIVATE ATTRIBUTES:
+            attemptID : Integer
+            examInfo : Exam
+            selectedAnswersList : List of String
+            elapsedTimeInMinutes : Integer
+
+        CONSTRUCTOR(id, ex)
+            SET attemptID = id
+            SET examInfo = ex
+            SET elapsedTimeInMinutes = 0
+            SET selectedAnswersList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD setElapsedTime(minutes)
+            SET elapsedTimeInMinutes = minutes
+        ENDMETHOD
+
+        METHOD selectAnswer(studentAnswer)
+            SET maxLimit = CALL examInfo.getTimeLimit()
+            IF elapsedTimeInMinutes > maxLimit THEN
+                DISPLAY "Transaction Terminated: Time limit has passed! Cannot accept more answers."
+                RETURN FALSE
+            ENDIF
+            ADD studentAnswer TO selectedAnswersList
+            RETURN TRUE
+        ENDMETHOD
+
+        METHOD calculateScore()
+            SET totalScore = 0
+            SET totalAnswers = SIZE OF selectedAnswersList
+            SET questions = CALL examInfo.getQuestionsList()
+            
+            REPEAT FROM i = 0 TO totalAnswers - 1
+                SET studentAns = selectedAnswersList[i]
+                SET correctAns = CALL questions[i].getCorrectAnswer()
+                
+                IF studentAns == correctAns THEN
+                    SET totalScore = totalScore + CALL questions[i].getPointValue()
+                ENDIF
+            ENDREPEAT
+            
+            RETURN totalScore
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Student
+        PRIVATE ATTRIBUTES:
+            studentID : Integer
+            name : String
+            allAttemptsHistory : List of ExamAttempt
+
+        CONSTRUCTOR(id, sName)
+            SET studentID = id
+            SET name = sName
+            SET allAttemptsHistory = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD logAttempt(attemptObj)
+            ADD attemptObj TO allAttemptsHistory
+            DISPLAY "Exam attempt successfully locked and archived."
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE MidtermExam FROM Exam(501, "Java OOP Exam", 30)
+    
+    CREATE Q1 FROM Question(1, "What is Encapsulation?", "A", 5)
+    CREATE Q2 FROM Question(2, "What does git status do?", "B", 5)
+    
+    CALL MidtermExam.addQuestion(Q1)
+    CALL MidtermExam.addQuestion(Q2)
+
+    CREATE Std_Monther FROM Student(7015, "Monther Al-Waili")
+
+    CREATE Attempt_1 FROM ExamAttempt(1, MidtermExam)
+    CALL Attempt_1.setElapsedTime(15)
+    CALL Attempt_1.selectAnswer("A")
+    CALL Attempt_1.selectAnswer("B")
+    CALL Std_Monther.logAttempt(Attempt_1)
+
+    CREATE Attempt_2 FROM ExamAttempt(2, MidtermExam)
+    CALL Attempt_2.setElapsedTime(45) 
+    CALL Attempt_2.selectAnswer("A") 
+    CALL Std_Monther.logAttempt(Attempt_2)
+
+    DISPLAY "First Verified Attempt Score Results: " + CALL Attempt_1.calculateScore() + " Points"
+
+END
+STOP
+
