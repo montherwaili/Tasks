@@ -249,3 +249,380 @@ BEGIN
 END
 STOP
 
+
+
+Task 290
+
+
+
+START
+BEGIN
+
+    CLASS Passenger
+        PRIVATE ATTRIBUTES:
+            passengerID : Integer
+            name : String
+            phoneNumber : String
+
+        CONSTRUCTOR(id, pName, phone)
+            SET passengerID = id
+            SET name = pName
+            SET phoneNumber = phone
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Trip
+        PRIVATE ATTRIBUTES:
+            tripID : Integer
+            pickupLocation : String
+            dropOffLocation : String
+            fare : Double
+            passengerObj : Passenger
+
+        CONSTRUCTOR(id, pickup, dropoff, price, psg)
+            SET tripID = id
+            SET pickupLocation = pickup
+            SET dropOffLocation = dropoff
+            SET fare = price
+            SET passengerObj = psg
+        ENDCONSTRUCTOR
+
+        METHOD getFare()
+            RETURN fare
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Driver
+        PRIVATE ATTRIBUTES:
+            driverID : Integer
+            name : String
+            vehicleModel : String
+            tripsHistory : List of Trip
+
+        CONSTRUCTOR(id, dName, vehicle)
+            SET driverID = id
+            SET name = dName
+            SET vehicleModel = vehicle
+            SET tripsHistory = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD getName()
+            RETURN name
+        ENDMETHOD
+
+        METHOD assignTrip(tripObj)
+            ADD tripObj TO tripsHistory
+            DISPLAY "Trip successfully assigned and logged under driver shift."
+        ENDMETHOD
+
+        METHOD calculateTotalEarnings()
+            SET totalEarnings = 0.0
+            SET totalTrips = SIZE OF tripsHistory
+            
+            REPEAT FROM i = 0 TO totalTrips - 1
+                SET totalEarnings = totalEarnings + CALL tripsHistory[i].getFare()
+            ENDREPEAT
+            
+            RETURN totalEarnings
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE RIDER_1 FROM Passenger(501, "Al-Monther Al-Waili", "+96899998888")
+    CREATE TAXI_DRIVER FROM Driver(12, "Salem Al-Harthy", "Toyota Camry 2025")
+
+    CREATE TRIP_A FROM Trip(7001, "Muscat Airport", "Seeb Mall", 12.50, RIDER_1)
+    CREATE TRIP_B FROM Trip(7002, "Seeb Mall", "Al-Badi", 8.00, RIDER_1)
+
+    CALL TAXI_DRIVER.assignTrip(TRIP_A)
+    CALL TAXI_DRIVER.assignTrip(TRIP_B)
+
+    DISPLAY "Driver Name: " + CALL TAXI_DRIVER.getName()
+    DISPLAY "Total Shift Earnings: OMR " + CALL TAXI_DRIVER.calculateTotalEarnings()
+
+END
+STOP
+
+
+
+
+
+
+
+Task 291
+
+
+START
+BEGIN
+
+    CLASS MembershipPlan
+        PRIVATE ATTRIBUTES:
+            planName : String
+            monthlyQuotaHours : Integer
+
+        CONSTRUCTOR(name, quota)
+            SET planName = name
+            SET monthlyQuotaHours = quota
+        ENDCONSTRUCTOR
+
+        METHOD getMonthlyQuota()
+            RETURN monthlyQuotaHours
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Room
+        PRIVATE ATTRIBUTES:
+            roomID : Integer
+            roomName : String
+
+        CONSTRUCTOR(id, rName)
+            SET roomID = id
+            SET roomName = rName
+        ENDCONSTRUCTOR
+
+        METHOD getRoomID()
+            RETURN roomID
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Booking
+        PRIVATE ATTRIBUTES:
+            bookingID : Integer
+            roomObj : Room
+            startTime : Integer 
+            endTime : Integer  
+            durationHours : Integer
+
+        CONSTRUCTOR(id, rm, start, end, duration)
+            SET bookingID = id
+            SET roomObj = rm
+            SET startTime = start
+            SET endTime = end
+            SET durationHours = duration
+        ENDCONSTRUCTOR
+
+        METHOD getDurationHours()
+            RETURN durationHours
+        ENDMETHOD
+
+        METHOD getStartTime()
+            RETURN startTime
+        ENDMETHOD
+
+        METHOD getEndTime()
+            RETURN endTime
+        ENDMETHOD
+
+        METHOD getRoomObj()
+            RETURN roomObj
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Member
+        PRIVATE ATTRIBUTES:
+            memberID : Integer
+            name : String
+            planDetails : MembershipPlan
+            activeBookings : List of Booking
+
+        CONSTRUCTOR(id, mName, plan)
+            SET memberID = id
+            SET name = mName
+            SET planDetails = plan
+            SET activeBookings = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD calculateUsedHours()
+            SET totalUsed = 0
+            SET totalBookings = SIZE OF activeBookings
+            
+            REPEAT FROM i = 0 TO totalBookings - 1
+                SET totalUsed = totalUsed + CALL activeBookings[i].getDurationHours()
+            ENDREPEAT
+            
+            RETURN totalUsed
+        ENDMETHOD
+
+        METHOD hasTimeOverlap(newBooking)
+            SET totalBookings = SIZE OF activeBookings
+            SET targetRoomID = CALL CALL newBooking.getRoomObj().getRoomID()
+            SET newStart = CALL newBooking.getStartTime()
+            SET newEnd = CALL newBooking.getEndTime()
+
+            REPEAT FROM i = 0 TO totalBookings - 1
+                SET existingBooking = activeBookings[i]
+                SET existingRoomID = CALL CALL existingBooking.getRoomObj().getRoomID()
+                
+                IF existingRoomID == targetRoomID THEN
+                    SET extStart = CALL existingBooking.getStartTime()
+                    SET extEnd = CALL existingBooking.getEndTime()
+                    
+                    IF newStart < extEnd AND newEnd > extStart THEN
+                        RETURN TRUE
+                    ENDIF
+                ENDIF
+            ENDREPEAT
+            RETURN FALSE
+        ENDMETHOD
+
+        METHOD requestBooking(bookingObj)
+            SET usedHours = CALL calculateUsedHours()
+            SET quotaLimit = CALL planDetails.getMonthlyQuota()
+            SET requestedHours = CALL bookingObj.getDurationHours()
+
+            IF usedHours + requestedHours > quotaLimit THEN
+                DISPLAY "Booking Refused: Member has exceeded their monthly plan quota hours!"
+                RETURN FALSE
+            ENDIF
+
+            IF CALL hasTimeOverlap(bookingObj) == TRUE THEN
+                DISPLAY "Booking Refused: Time slot overlap detected for this meeting room!"
+                RETURN FALSE
+            ENDIF
+
+            ADD bookingObj TO activeBookings
+            DISPLAY "Booking successfully confirmed and registered."
+            RETURN TRUE
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE ExecutivePlan FROM MembershipPlan("Premium Executive", 5)
+    CREATE MeetingRoom_A FROM Room(201, "Conference Room A")
+    CREATE Member_Monther FROM Member(7015, "Monther Al-Waili", ExecutivePlan)
+
+    CREATE BOOK_1 FROM Booking(1, MeetingRoom_A, 1000, 1300, 3)
+    CREATE BOOK_2 FROM Booking(2, MeetingRoom_A, 1100, 1400, 3) 
+
+    CALL Member_Monther.requestBooking(BOOK_1)
+    CALL Member_Monther.requestBooking(BOOK_2) 
+
+    DISPLAY "Live Calculated Remaining Hours: " + (CALL ExecutivePlan.getMonthlyQuota() - CALL Member_Monther.calculateUsedHours())
+
+END
+STOP
+
+
+
+
+
+Task 292
+
+
+
+START
+BEGIN
+
+    CLASS Client
+        PRIVATE ATTRIBUTES:
+            clientID : Integer
+            name : String
+            phoneNumber : String
+            clientSessionsList : List of Session
+
+        CONSTRUCTOR(id, cName, phone)
+            SET clientID = id
+            SET name = cName
+            SET phoneNumber = phone
+            SET clientSessionsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addSessionToClient(sessionObj)
+            ADD sessionObj TO clientSessionsList
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Session
+        PRIVATE ATTRIBUTES:
+            sessionID : Integer
+            date : String
+            startTime : Integer 
+            durationMinutes : Integer
+            workoutType : String
+            clientObj : Client
+
+        CONSTRUCTOR(id, sDate, sTime, duration, type, clt)
+            SET sessionID = id
+            SET date = sDate
+            SET startTime = sTime
+            SET durationMinutes = duration
+            SET workoutType = type
+            SET clientObj = clt
+        ENDCONSTRUCTOR
+
+        METHOD getDate()
+            RETURN date
+        ENDMETHOD
+
+        METHOD getStartTime()
+            RETURN startTime
+        ENDMETHOD
+
+        METHOD getDurationMinutes()
+            RETURN durationMinutes
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Trainer
+        PRIVATE ATTRIBUTES:
+            trainerID : Integer
+            name : String
+            masterSchedule : List of Session
+
+        CONSTRUCTOR(id, tName)
+            SET trainerID = id
+            SET name = tName
+            SET masterSchedule = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD hasTrainerConflict(newSession)
+            SET totalSessions = SIZE OF masterSchedule
+            SET newDate = CALL newSession.getDate()
+            SET newStart = CALL newSession.getStartTime()
+            SET newDuration = CALL newSession.getDurationMinutes()
+            SET newEnd = newStart + (newDuration / 60 * 100) 
+            REPEAT FROM i = 0 TO totalSessions - 1
+                SET existingSession = masterSchedule[i]
+                IF CALL existingSession.getDate() == newDate THEN
+                    SET extStart = CALL existingSession.getStartTime()
+                    SET extDuration = CALL existingSession.getDurationMinutes()
+                    SET extEnd = extStart + (extDuration / 60 * 100)
+                    
+                    IF newStart < extEnd AND newEnd > extStart THEN
+                        RETURN TRUE
+                    ENDIF
+                ENDIF
+            ENDREPEAT
+            RETURN FALSE
+        ENDMETHOD
+
+        METHOD scheduleSession(sessionObj, clientObj)
+            IF CALL hasTrainerConflict(sessionObj) == TRUE THEN
+                DISPLAY "Scheduling Terminated: Trainer is already booked with another client at this time!"
+                RETURN FALSE
+            ENDIF
+
+            ADD sessionObj TO masterSchedule
+            CALL clientObj.addSessionToClient(sessionObj)
+            DISPLAY "Fitness session successfully scheduled on trainer master schedule."
+            RETURN TRUE
+        ENDMETHOD
+
+        METHOD getTotalScheduledSessions()
+            RETURN SIZE OF masterSchedule
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE FitnessTrainer FROM Trainer(1, "Captain Salem")
+    CREATE Cust_Monther FROM Client(7015, "Monther Al-Waili", "+96899998888")
+
+    CREATE SESSION_1 FROM Session(101, "2026-07-15", 1600, 60, "Cardio & Crossfit", Cust_Monther)
+    CREATE SESSION_2 FROM Session(102, "2026-07-15", 1630, 60, "Weightlifting", Cust_Monther) 
+
+    CALL FitnessTrainer.scheduleSession(SESSION_1, Cust_Monther)
+    CALL FitnessTrainer.scheduleSession(SESSION_2, Cust_Monther)
+
+    DISPLAY "Trainer Master Total Active Booked Sessions: " + CALL FitnessTrainer.getTotalScheduledSessions()
+
+END
+STOP
+
+
