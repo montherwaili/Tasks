@@ -248,3 +248,119 @@ BEGIN
 END
 STOP
 
+
+
+
+
+295
+
+
+START
+BEGIN
+
+    CLASS Animal
+        PRIVATE ATTRIBUTES:
+            name : String
+            age : Integer
+            dietType : String
+
+        CONSTRUCTOR(aName, aAge, diet)
+            SET name = aName
+            SET age = aAge
+            SET dietType = diet
+        ENDCONSTRUCTOR
+
+        METHOD getName()
+            RETURN name
+        ENDMETHOD
+
+        METHOD makeSound()
+            RETURN "Generic Animal Sound"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Bird EXTENDS Animal
+        PRIVATE ATTRIBUTES:
+            wingspan : Double
+            canFly : Boolean
+
+        CONSTRUCTOR(aName, aAge, diet, span, fly)
+            CALL SUPER_CONSTRUCTOR(aName, aAge, diet)
+            SET wingspan = span
+            SET canFly = fly
+        ENDCONSTRUCTOR
+
+        METHOD makeSound()
+            RETURN "Chirp Chirp"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Fish EXTENDS Animal
+        PRIVATE ATTRIBUTES:
+            gillType : String
+            swimSpeed : Double
+
+        CONSTRUCTOR(aName, aAge, diet, gill, speed)
+            CALL SUPER_CONSTRUCTOR(aName, aAge, diet)
+            SET gillType = gill
+            SET swimSpeed = speed
+        ENDCONSTRUCTOR
+
+        METHOD makeSound()
+            RETURN "Blub Blub"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Mammal EXTENDS Animal
+        PRIVATE ATTRIBUTES:
+            furColor : String
+            hasLiveBirth : Boolean
+
+        CONSTRUCTOR(aName, aAge, diet, fur, birth)
+            CALL SUPER_CONSTRUCTOR(aName, aAge, diet)
+            SET furColor = fur
+            SET hasLiveBirth = birth
+        ENDCONSTRUCTOR
+
+        METHOD makeSound()
+            RETURN "Roar Roar"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Enclosure
+        PRIVATE ATTRIBUTES:
+            enclosureID : Integer
+            temperatureSetting : Double
+            animalsList : List of Animal
+
+        CONSTRUCTOR(id, temp)
+            SET enclosureID = id
+            SET temperatureSetting = temp
+            SET animalsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addAnimal(animalObj)
+            ADD animalObj TO animalsList
+            DISPLAY "Animal successfully placed inside the enclosure."
+        ENDMETHOD
+
+        METHOD getAnimalsCount()
+            RETURN SIZE OF animalsList
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE DesertEnclosure FROM Enclosure(101, 35.5)
+    CREATE Lion FROM Mammal("Simba", 5, "Carnivore", "Golden", TRUE)
+    CREATE Eagle FROM Bird("Aquila", 3, "Carnivore", 2.1, TRUE)
+
+    CALL DesertEnclosure.addAnimal(Lion)
+    CALL DesertEnclosure.addAnimal(Eagle)
+
+    DISPLAY "Zoo Enclosure Live Overview"
+    DISPLAY "Total Enclosed Resident Animals: " + CALL DesertEnclosure.getAnimalsCount()
+    DISPLAY "Animal 1 Sound: " + CALL Lion.makeSound()
+    DISPLAY "Animal 2 Sound: " + CALL Eagle.makeSound()
+
+END
+STOP
+
