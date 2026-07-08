@@ -328,17 +328,36 @@ Task 290
 START
 BEGIN
 
+    CLASS Vehicle
+        PRIVATE ATTRIBUTES:
+            vehicleID : Integer
+            model : String
+            plateNumber : String
+
+        CONSTRUCTOR(id, mdl, plate)
+            SET this.vehicleID TO id
+            SET this.model TO mdl
+            SET this.plateNumber TO plate
+        ENDCONSTRUCTOR
+    ENDCLASS
+
     CLASS Passenger
         PRIVATE ATTRIBUTES:
             passengerID : Integer
             name : String
             phoneNumber : String
+            tripsHistory : List of Trip
 
         CONSTRUCTOR(id, pName, phone)
-            SET passengerID = id
-            SET name = pName
-            SET phoneNumber = phone
+            SET this.passengerID TO id
+            SET this.name TO pName
+            SET this.phoneNumber TO phone
+            SET this.tripsHistory TO LIST []
         ENDCONSTRUCTOR
+
+        METHOD addTripToHistory(tripObj)
+            ADD tripObj TO this.tripsHistory
+        ENDMETHOD
     ENDCLASS
 
     CLASS Trip
@@ -350,15 +369,15 @@ BEGIN
             passengerObj : Passenger
 
         CONSTRUCTOR(id, pickup, dropoff, price, psg)
-            SET tripID = id
-            SET pickupLocation = pickup
-            SET dropOffLocation = dropoff
-            SET fare = price
-            SET passengerObj = psg
+            SET this.tripID TO id
+            SET this.pickupLocation TO pickup
+            SET this.dropOffLocation TO dropoff
+            SET this.fare TO price
+            SET this.passengerObj TO psg
         ENDCONSTRUCTOR
 
         METHOD getFare()
-            RETURN fare
+            RETURN this.fare
         ENDMETHOD
     ENDCLASS
 
@@ -366,52 +385,58 @@ BEGIN
         PRIVATE ATTRIBUTES:
             driverID : Integer
             name : String
-            vehicleModel : String
+            vehicleDetails : Vehicle
             tripsHistory : List of Trip
 
-        CONSTRUCTOR(id, dName, vehicle)
-            SET driverID = id
-            SET name = dName
-            SET vehicleModel = vehicle
-            SET tripsHistory = INITIALIZE EMPTY LIST
+        CONSTRUCTOR(id, dName, veh)
+            SET this.driverID TO id
+            SET this.name TO dName
+            SET this.vehicleDetails TO veh
+            SET this.tripsHistory TO LIST []
         ENDCONSTRUCTOR
 
         METHOD getName()
-            RETURN name
+            RETURN this.name
         ENDMETHOD
 
-        METHOD assignTrip(tripObj)
-            ADD tripObj TO tripsHistory
+        METHOD getTrips()
+            RETURN this.tripsHistory
+        ENDMETHOD
+
+        METHOD assignTrip(tripObj, passengerObj)
+            ADD tripObj TO this.tripsHistory
+            CALL passengerObj.addTripToHistory(tripObj)
             DISPLAY "Trip successfully assigned and logged under driver shift."
         ENDMETHOD
 
         METHOD calculateTotalEarnings()
-            SET totalEarnings = 0.0
-            SET totalTrips = SIZE OF tripsHistory
+            SET totalEarnings TO 0.0
+            SET totalTrips TO SIZE OF this.tripsHistory
             
             REPEAT FROM i = 0 TO totalTrips - 1
-                SET totalEarnings = totalEarnings + CALL tripsHistory[i].getFare()
+                SET totalEarnings TO totalEarnings + CALL this.tripsHistory[i].getFare()
             ENDREPEAT
             
             RETURN totalEarnings
         ENDMETHOD
     ENDCLASS
 
+    CREATE MyCar FROM Vehicle(1, "Toyota Camry 2025", "OM-9942-A")
     CREATE RIDER_1 FROM Passenger(501, "Al-Monther Al-Waili", "+96899998888")
-    CREATE TAXI_DRIVER FROM Driver(12, "Salem Al-Harthy", "Toyota Camry 2025")
+    CREATE TAXI_DRIVER FROM Driver(12, "Salem Al-Harthy", MyCar)
 
     CREATE TRIP_A FROM Trip(7001, "Muscat Airport", "Seeb Mall", 12.50, RIDER_1)
     CREATE TRIP_B FROM Trip(7002, "Seeb Mall", "Al-Badi", 8.00, RIDER_1)
 
-    CALL TAXI_DRIVER.assignTrip(TRIP_A)
-    CALL TAXI_DRIVER.assignTrip(TRIP_B)
+    CALL TAXI_DRIVER.assignTrip(TRIP_A, RIDER_1)
+    CALL TAXI_DRIVER.assignTrip(TRIP_B, RIDER_1)
 
     DISPLAY "Driver Name: " + CALL TAXI_DRIVER.getName()
     DISPLAY "Total Shift Earnings: OMR " + CALL TAXI_DRIVER.calculateTotalEarnings()
+    DISPLAY "Total Trips in Driver Log: " + SIZE OF CALL TAXI_DRIVER.getTrips()
 
 END
 STOP
-
 
 
 
