@@ -614,45 +614,18 @@ BEGIN
             clientSessionsList : List of Session
 
         CONSTRUCTOR(id, cName, phone)
-            SET clientID = id
-            SET name = cName
-            SET phoneNumber = phone
-            SET clientSessionsList = INITIALIZE EMPTY LIST
+            SET this.clientID TO id
+            SET this.name TO cName
+            SET this.phoneNumber TO phone
+            SET this.clientSessionsList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD addSessionToClient(sessionObj)
-            ADD sessionObj TO clientSessionsList
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS Session
-        PRIVATE ATTRIBUTES:
-            sessionID : Integer
-            date : String
-            startTime : Integer 
-            durationMinutes : Integer
-            workoutType : String
-            clientObj : Client
-
-        CONSTRUCTOR(id, sDate, sTime, duration, type, clt)
-            SET sessionID = id
-            SET date = sDate
-            SET startTime = sTime
-            SET durationMinutes = duration
-            SET workoutType = type
-            SET clientObj = clt
-        ENDCONSTRUCTOR
-
-        METHOD getDate()
-            RETURN date
+            ADD sessionObj TO this.clientSessionsList
         ENDMETHOD
 
-        METHOD getStartTime()
-            RETURN startTime
-        ENDMETHOD
-
-        METHOD getDurationMinutes()
-            RETURN durationMinutes
+        METHOD getClientSessions()
+            RETURN this.clientSessionsList
         ENDMETHOD
     ENDCLASS
 
@@ -663,25 +636,24 @@ BEGIN
             masterSchedule : List of Session
 
         CONSTRUCTOR(id, tName)
-            SET trainerID = id
-            SET name = tName
-            SET masterSchedule = INITIALIZE EMPTY LIST
+            SET this.trainerID TO id
+            SET this.name TO tName
+            SET this.masterSchedule TO LIST []
         ENDCONSTRUCTOR
 
         METHOD hasTrainerConflict(newSession)
-            SET totalSessions = SIZE OF masterSchedule
-            SET newDate = CALL newSession.getDate()
-            SET newStart = CALL newSession.getStartTime()
-            SET newDuration = CALL newSession.getDurationMinutes()
-            SET newEnd = newStart + (newDuration / 60 * 100) 
+            SET totalSessions TO SIZE OF this.masterSchedule
+            SET newDate TO CALL newSession.getDate()
+            SET newStart TO CALL newSession.getStartTimeMinutes()
+            SET newEnd TO CALL newSession.getEndTimeMinutes()
+
             REPEAT FROM i = 0 TO totalSessions - 1
-                SET existingSession = masterSchedule[i]
-                IF CALL existingSession.getDate() == newDate THEN
-                    SET extStart = CALL existingSession.getStartTime()
-                    SET extDuration = CALL existingSession.getDurationMinutes()
-                    SET extEnd = extStart + (extDuration / 60 * 100)
+                SET existingSession TO this.masterSchedule[i]
+                IF CALL existingSession.getDate() Equals newDate THEN
+                    SET extStart TO CALL existingSession.getStartTimeMinutes()
+                    SET extEnd TO CALL existingSession.getEndTimeMinutes()
                     
-                    IF newStart < extEnd AND newEnd > extStart THEN
+                    IF newStart Less Than extEnd AND newEnd Greater Than extStart THEN
                         RETURN TRUE
                     ENDIF
                 ENDIF
@@ -690,34 +662,69 @@ BEGIN
         ENDMETHOD
 
         METHOD scheduleSession(sessionObj, clientObj)
-            IF CALL hasTrainerConflict(sessionObj) == TRUE THEN
+            IF CALL this.hasTrainerConflict(sessionObj) Equals TRUE THEN
                 DISPLAY "Scheduling Terminated: Trainer is already booked with another client at this time!"
                 RETURN FALSE
             ENDIF
 
-            ADD sessionObj TO masterSchedule
+            ADD sessionObj TO this.masterSchedule
             CALL clientObj.addSessionToClient(sessionObj)
             DISPLAY "Fitness session successfully scheduled on trainer master schedule."
             RETURN TRUE
         ENDMETHOD
 
         METHOD getTotalScheduledSessions()
-            RETURN SIZE OF masterSchedule
+            RETURN SIZE OF this.masterSchedule
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Session
+        PRIVATE ATTRIBUTES:
+            sessionID : Integer
+            date : String
+            startTimeMinutes : Integer 
+            endTimeMinutes : Integer   
+            workoutType : String
+            clientObj : Client
+            trainerObj : Trainer
+
+        CONSTRUCTOR(id, sDate, startMin, endMin, type, clt, trn)
+            SET this.sessionID TO id
+            SET this.date TO sDate
+            SET this.startTimeMinutes TO startMin
+            SET this.endTimeMinutes TO endMin
+            SET this.workoutType TO type
+            SET this.clientObj TO clt
+            SET this.trainerObj TO trn
+        ENDCONSTRUCTOR
+
+        METHOD getDate()
+            RETURN this.date
+        ENDMETHOD
+
+        METHOD getStartTimeMinutes()
+            RETURN this.startTimeMinutes
+        ENDMETHOD
+
+        METHOD getEndTimeMinutes()
+            RETURN this.endTimeMinutes
         ENDMETHOD
     ENDCLASS
 
     CREATE FitnessTrainer FROM Trainer(1, "Captain Salem")
     CREATE Cust_Monther FROM Client(7015, "Monther Al-Waili", "+96899998888")
 
-    CREATE SESSION_1 FROM Session(101, "2026-07-15", 1600, 60, "Cardio & Crossfit", Cust_Monther)
-    CREATE SESSION_2 FROM Session(102, "2026-07-15", 1630, 60, "Weightlifting", Cust_Monther) 
+    CREATE SESSION_1 FROM Session(101, "2026-07-15", 960, 1020, "Cardio & Crossfit", Cust_Monther, FitnessTrainer)
+    CREATE SESSION_2 FROM Session(102, "2026-07-15", 990, 1050, "Weightlifting", Cust_Monther, FitnessTrainer) 
 
     CALL FitnessTrainer.scheduleSession(SESSION_1, Cust_Monther)
-    CALL FitnessTrainer.scheduleSession(SESSION_2, Cust_Monther)
+    CALL FitnessTrainer.scheduleSession(SESSION_2, Cust_Monther) 
 
     DISPLAY "Trainer Master Total Active Booked Sessions: " + CALL FitnessTrainer.getTotalScheduledSessions()
+    DISPLAY "Total Active Sessions in Client Log: " + SIZE OF CALL Cust_Monther.getClientSessions()
 
 END
 STOP
+
 
 
