@@ -114,6 +114,7 @@ STOP
 
 
 
+
 Task 289
 
 
@@ -126,20 +127,40 @@ BEGIN
             text : String
             correctAnswer : String
             pointValue : Integer
+            optionsList : List of String
 
         CONSTRUCTOR(id, qText, correctAns, points)
-            SET questionID = id
-            SET text = qText
-            SET correctAnswer = correctAns
-            SET pointValue = points
+            SET this.questionID TO id
+            SET this.text TO qText
+            SET this.correctAnswer TO correctAns
+            SET this.pointValue TO points
+            SET this.optionsList TO LIST []
         ENDCONSTRUCTOR
 
+        METHOD getQuestionID()
+            RETURN this.questionID
+        ENDMETHOD
+
         METHOD getCorrectAnswer()
-            RETURN correctAnswer
+            RETURN this.correctAnswer
         ENDMETHOD
 
         METHOD getPointValue()
-            RETURN pointValue
+            RETURN this.pointValue
+        ENDMETHOD
+
+        METHOD addOption(optionText)
+            ADD optionText TO this.optionsList
+        ENDMETHOD
+
+        METHOD isValidOption(studentAnswer)
+            SET totalOptions TO SIZE OF this.optionsList
+            REPEAT FROM i = 0 TO totalOptions - 1
+                IF this.optionsList[i] Equals studentAnswer THEN
+                    RETURN TRUE
+                ENDIF
+            ENDREPEAT
+            RETURN FALSE
         ENDMETHOD
     ENDCLASS
 
@@ -151,22 +172,41 @@ BEGIN
             questionsList : List of Question
 
         CONSTRUCTOR(id, tlt, limit)
-            SET examID = id
-            SET title = tlt
-            SET timeLimitInMinutes = limit
-            SET questionsList = INITIALIZE EMPTY LIST
+            SET this.examID TO id
+            SET this.title TO tlt
+            SET this.timeLimitInMinutes TO limit
+            SET this.questionsList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD addQuestion(questionObj)
-            ADD questionObj TO questionsList
+            ADD questionObj TO this.questionsList
         ENDMETHOD
 
         METHOD getTimeLimit()
-            RETURN timeLimitInMinutes
+            RETURN this.timeLimitInMinutes
         ENDMETHOD
 
         METHOD getQuestionsList()
-            RETURN questionsList
+            RETURN this.questionsList
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS StudentAnswer
+        PRIVATE ATTRIBUTES:
+            associatedQuestionID : Integer
+            selectedOption : String
+
+        CONSTRUCTOR(qID, option)
+            SET this.associatedQuestionID TO qID
+            SET this.selectedOption TO option
+        ENDCONSTRUCTOR
+
+        METHOD getAssociatedQuestionID()
+            RETURN this.associatedQuestionID
+        ENDMETHOD
+
+        METHOD getSelectedOption()
+            RETURN this.selectedOption
         ENDMETHOD
     ENDCLASS
 
@@ -174,44 +214,63 @@ BEGIN
         PRIVATE ATTRIBUTES:
             attemptID : Integer
             examInfo : Exam
-            selectedAnswersList : List of String
+            studentAnswersList : List of StudentAnswer
             elapsedTimeInMinutes : Integer
 
         CONSTRUCTOR(id, ex)
-            SET attemptID = id
-            SET examInfo = ex
-            SET elapsedTimeInMinutes = 0
-            SET selectedAnswersList = INITIALIZE EMPTY LIST
+            SET this.attemptID TO id
+            SET this.examInfo TO ex
+            SET this.elapsedTimeInMinutes TO 0
+            SET this.studentAnswersList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD setElapsedTime(minutes)
-            SET elapsedTimeInMinutes = minutes
+            SET this.elapsedTimeInMinutes TO minutes
         ENDMETHOD
 
-        METHOD selectAnswer(studentAnswer)
-            SET maxLimit = CALL examInfo.getTimeLimit()
-            IF elapsedTimeInMinutes > maxLimit THEN
+        METHOD selectAnswer(questionObj, optionText)
+            SET maxLimit TO CALL this.examInfo.getTimeLimit()
+            IF this.elapsedTimeInMinutes Greater Than maxLimit THEN
                 DISPLAY "Transaction Terminated: Time limit has passed! Cannot accept more answers."
                 RETURN FALSE
             ENDIF
-            ADD studentAnswer TO selectedAnswersList
+
+            IF CALL questionObj.isValidOption(optionText) Equals FALSE THEN
+                DISPLAY "Transaction Terminated: Invalid option selection for this question!"
+                RETURN FALSE
+            ENDIF
+
+            CREATE newAnswer FROM StudentAnswer(CALL questionObj.getQuestionID(), optionText)
+            ADD newAnswer TO this.studentAnswersList
             RETURN TRUE
         ENDMETHOD
 
         METHOD calculateScore()
-            SET totalScore = 0
-            SET totalAnswers = SIZE OF selectedAnswersList
-            SET questions = CALL examInfo.getQuestionsList()
-            
-            REPEAT FROM i = 0 TO totalAnswers - 1
-                SET studentAns = selectedAnswersList[i]
-                SET correctAns = CALL questions[i].getCorrectAnswer()
-                
-                IF studentAns == correctAns THEN
-                    SET totalScore = totalScore + CALL questions[i].getPointValue()
+            SET totalScore TO 0
+            SET totalStudentAnswers TO SIZE OF this.studentAnswersList
+            SET examQuestions TO CALL this.examInfo.getQuestionsList()
+            SET totalExamQuestions TO SIZE OF examQuestions
+
+            REPEAT FROM i = 0 TO totalExamQuestions - 1
+                SET currentQuestion TO examQuestions[i]
+                SET currentQuestionID TO CALL currentQuestion.getQuestionID()
+                SET isAnswerFound TO FALSE
+                SET studentSelectedOption TO ""
+
+                REPEAT FROM j = 0 TO totalStudentAnswers - 1
+                    IF CALL this.studentAnswersList[j].getAssociatedQuestionID() Equals currentQuestionID THEN
+                        SET isAnswerFound TO TRUE
+                        SET studentSelectedOption TO CALL this.studentAnswersList[j].getSelectedOption()
+                    ENDIF
+                ENDREPEAT
+
+                IF isAnswerFound Equals TRUE THEN
+                    IF studentSelectedOption Equals CALL currentQuestion.getCorrectAnswer() THEN
+                        SET totalScore TO totalScore + CALL currentQuestion.getPointValue()
+                    ENDIF
                 ENDIF
             ENDREPEAT
-            
+
             RETURN totalScore
         ENDMETHOD
     ENDCLASS
@@ -223,13 +282,13 @@ BEGIN
             allAttemptsHistory : List of ExamAttempt
 
         CONSTRUCTOR(id, sName)
-            SET studentID = id
-            SET name = sName
-            SET allAttemptsHistory = INITIALIZE EMPTY LIST
+            SET this.studentID TO id
+            SET this.name TO sName
+            SET this.allAttemptsHistory TO LIST []
         ENDCONSTRUCTOR
 
         METHOD logAttempt(attemptObj)
-            ADD attemptObj TO allAttemptsHistory
+            ADD attemptObj TO this.allAttemptsHistory
             DISPLAY "Exam attempt successfully locked and archived."
         ENDMETHOD
     ENDCLASS
@@ -237,7 +296,12 @@ BEGIN
     CREATE MidtermExam FROM Exam(501, "Java OOP Exam", 30)
     
     CREATE Q1 FROM Question(1, "What is Encapsulation?", "A", 5)
+    CALL Q1.addOption("A")
+    CALL Q1.addOption("B")
+    
     CREATE Q2 FROM Question(2, "What does git status do?", "B", 5)
+    CALL Q2.addOption("A")
+    CALL Q2.addOption("B")
     
     CALL MidtermExam.addQuestion(Q1)
     CALL MidtermExam.addQuestion(Q2)
@@ -246,14 +310,9 @@ BEGIN
 
     CREATE Attempt_1 FROM ExamAttempt(1, MidtermExam)
     CALL Attempt_1.setElapsedTime(15)
-    CALL Attempt_1.selectAnswer("A")
-    CALL Attempt_1.selectAnswer("B")
+    CALL Attempt_1.selectAnswer(Q1, "A")
+    CALL Attempt_1.selectAnswer(Q2, "B")
     CALL Std_Monther.logAttempt(Attempt_1)
-
-    CREATE Attempt_2 FROM ExamAttempt(2, MidtermExam)
-    CALL Attempt_2.setElapsedTime(45) 
-    CALL Attempt_2.selectAnswer("A") 
-    CALL Std_Monther.logAttempt(Attempt_2)
 
     DISPLAY "First Verified Attempt Score Results: " + CALL Attempt_1.calculateScore() + " Points"
 
