@@ -4,28 +4,43 @@ Task 288
 START
 BEGIN
 
+    CLASS Genre
+        PRIVATE ATTRIBUTES:
+            genreID : Integer
+            genreName : String
+
+        CONSTRUCTOR(id, name)
+            SET this.genreID TO id
+            SET this.genreName TO name
+        ENDCONSTRUCTOR
+
+        METHOD getGenreName()
+            RETURN this.genreName
+        ENDMETHOD
+    ENDCLASS
+
     CLASS Book
         PRIVATE ATTRIBUTES:
             bookID : Integer
             title : String
             author : String
             price : Double
-            genre : String
+            genreDetails : Genre
 
-        CONSTRUCTOR(id, tlt, auth, prc, gnr)
-            SET bookID = id
-            SET title = tlt
-            SET author = auth
-            SET price = prc
-            SET genre = gnr
+        CONSTRUCTOR(id, tlt, auth, prc, gnrObj)
+            SET this.bookID TO id
+            SET this.title TO tlt
+            SET this.author TO auth
+            SET this.price TO prc
+            SET this.genreDetails TO gnrObj
         ENDCONSTRUCTOR
 
         METHOD getPrice()
-            RETURN price
+            RETURN this.price
         ENDMETHOD
 
         METHOD getTitle()
-            RETURN title
+            RETURN this.title
         ENDMETHOD
     ENDCLASS
 
@@ -37,14 +52,14 @@ BEGIN
             timestamp : String
 
         CONSTRUCTOR(id, bk, time)
-            SET saleID = id
-            SET bookInfo = bk
-            SET soldPrice = CALL bk.getPrice()
-            SET timestamp = time
+            SET this.saleID TO id
+            SET this.bookInfo TO bk
+            SET this.soldPrice TO CALL bk.getPrice()
+            SET this.timestamp TO time
         ENDCONSTRUCTOR
 
         METHOD getSoldPrice()
-            RETURN soldPrice
+            RETURN this.soldPrice
         ENDMETHOD
     ENDCLASS
 
@@ -55,49 +70,45 @@ BEGIN
             purchaseHistory : List of Sale
 
         CONSTRUCTOR(id, cName)
-            SET customerID = id
-            SET name = cName
-            SET purchaseHistory = INITIALIZE EMPTY LIST
+            SET this.customerID TO id
+            SET this.name TO cName
+            SET this.purchaseHistory TO LIST []
         ENDCONSTRUCTOR
 
         METHOD getName()
-            RETURN name
+            RETURN this.name
         ENDMETHOD
 
         METHOD addPurchase(saleObj)
-            ADD saleObj TO purchaseHistory
+            ADD saleObj TO this.purchaseHistory
             DISPLAY "Purchase successfully added to customer history."
         ENDMETHOD
 
         METHOD calculateTotalSpent()
-            SET totalSpent = 0.0
-            SET totalPurchases = SIZE OF purchaseHistory
+            SET totalSpent TO 0.0
+            SET totalPurchases TO SIZE OF this.purchaseHistory
             
             REPEAT FROM i = 0 TO totalPurchases - 1
-                SET totalSpent = totalSpent + CALL purchaseHistory[i].getSoldPrice()
+                SET totalSpent TO totalSpent + CALL this.purchaseHistory[i].getSoldPrice()
             ENDREPEAT
             
             RETURN totalSpent
         ENDMETHOD
     ENDCLASS
 
-    CREATE Book_OOP FROM Book(101, "OOP Principles", "Dr. Ahmed", 15.00, "Education")
-    CREATE Book_Git FROM Book(102, "Git Version Control", "Al-Monther", 10.00, "Technology")
+    CREATE TechGenre FROM Genre(1, "Technology")
+    CREATE Book_Git FROM Book(102, "Git Version Control", "Al-Monther", 10.00, TechGenre)
     
     CREATE Cust_Monther FROM Customer(7015, "Monther Al-Waili")
-
-    CREATE Sale_1 FROM Sale(9001, Book_OOP, "2026-07-07 10:00")
-    CREATE Sale_2 FROM Sale(9002, Book_Git, "2026-07-07 10:05")
+    CREATE Sale_1 FROM Sale(9001, Book_Git, "2026-07-08 10:00")
 
     CALL Cust_Monther.addPurchase(Sale_1)
-    CALL Cust_Monther.addPurchase(Sale_2)
 
     DISPLAY "Customer Name: " + CALL Cust_Monther.getName()
     DISPLAY "Total Accumulative Spending: OMR " + CALL Cust_Monther.calculateTotalSpent()
 
 END
 STOP
-
 
 
 
