@@ -536,3 +536,127 @@ BEGIN
 
 END
 STOP
+
+
+
+297
+
+
+START
+BEGIN
+
+    CLASS Subscription
+        PRIVATE ATTRIBUTES:
+            startDate : String
+            monthlyPrice : Double
+
+        CONSTRUCTOR(sDate, price)
+            SET startDate = sDate
+            SET monthlyPrice = price
+        ENDCONSTRUCTOR
+
+        METHOD getDeviceLimit()
+            RETURN 0
+        ENDMETHOD
+
+        METHOD getStreamingQuality()
+            RETURN "Unknown Quality"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS BasicPlan EXTENDS Subscription
+        CONSTRUCTOR(sDate, price)
+            CALL SUPER_CONSTRUCTOR(sDate, price)
+        ENDCONSTRUCTOR
+
+        METHOD getDeviceLimit()
+            RETURN 1
+        ENDMETHOD
+
+        METHOD getStreamingQuality()
+            RETURN "Standard Definition (SD)"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS StandardPlan EXTENDS Subscription
+        CONSTRUCTOR(sDate, price)
+            CALL SUPER_CONSTRUCTOR(sDate, price)
+        ENDCONSTRUCTOR
+
+        METHOD getDeviceLimit()
+            RETURN 2
+        ENDMETHOD
+
+        METHOD getStreamingQuality()
+            RETURN "High Definition (HD)"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS PremiumPlan EXTENDS Subscription
+        CONSTRUCTOR(sDate, price)
+            CALL SUPER_CONSTRUCTOR(sDate, price)
+        ENDCONSTRUCTOR
+
+        METHOD getDeviceLimit()
+            RETURN 4
+        ENDMETHOD
+
+        METHOD getStreamingQuality()
+            RETURN "Ultra High Definition (UHD)"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS WatchRecord
+        PRIVATE ATTRIBUTES:
+            title : String
+            watchDate : String
+
+        CONSTRUCTOR(tlt, wDate)
+            SET title = tlt
+            SET watchDate = wDate
+        ENDCONSTRUCTOR
+
+        METHOD getTitle()
+            RETURN title
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS UserAccount
+        PRIVATE ATTRIBUTES:
+            accountID : Integer
+            currentSubscription : Subscription
+            watchHistory : List of WatchRecord
+
+        CONSTRUCTOR(id, subObj)
+            SET accountID = id
+            SET currentSubscription = subObj
+            SET watchHistory = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD watchVideo(recordObj)
+            ADD recordObj TO watchHistory
+        ENDMETHOD
+
+        METHOD getCurrentSubscription()
+            RETURN currentSubscription
+        ENDMETHOD
+
+        METHOD getHistorySize()
+            RETURN SIZE OF watchHistory
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE MyPremiumPlan FROM PremiumPlan("2026-07-08", 6.00)
+    CREATE Account_Monther FROM UserAccount(7015, MyPremiumPlan)
+
+    CREATE Movie_1 FROM WatchRecord("The Chronomancer's Cipher", "2026-07-08")
+    CALL Account_Monther.watchVideo(Movie_1)
+
+    SET mySub = CALL Account_Monther.getCurrentSubscription()
+    DISPLAY "User Subscription Account Blueprint"
+    DISPLAY "Active Plan Quality: " + CALL mySub.getStreamingQuality()
+    DISPLAY "Concurrent Device Limit: " + CALL mySub.getDeviceLimit()
+    DISPLAY "Total Watched Titles: " + CALL Account_Monther.getHistorySize()
+
+END
+STOP
