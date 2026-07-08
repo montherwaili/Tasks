@@ -1173,3 +1173,181 @@ BEGIN
 
 END
 STOP
+
+
+
+302
+
+
+START
+BEGIN
+
+    CLASS StorageUnit
+        PRIVATE ATTRIBUTES:
+            maxCapacityGB : Double
+            usedSpaceGB : Double
+
+        CONSTRUCTOR(maxCap, used)
+            SET maxCapacityGB = maxCap
+            SET usedSpaceGB = used
+        ENDCONSTRUCTOR
+
+        METHOD hasSpace(neededGB)
+            IF usedSpaceGB + neededGB Greater Than maxCapacityGB THEN
+                RETURN FALSE
+            ELSE
+                RETURN TRUE
+            ENDIF
+        ENDMETHOD
+
+        METHOD consumeSpace(neededGB)
+            SET usedSpaceGB = usedSpaceGB + neededGB
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Device
+        PRIVATE ATTRIBUTES:
+            name : String
+            roomLocation : String
+            isOn : Boolean
+
+        CONSTRUCTOR(dName, location)
+            SET name = dName
+            SET roomLocation = location
+            SET isOn = FALSE
+        ENDCONSTRUCTOR
+
+        METHOD turnOn()
+            SET isOn = TRUE
+        ENDMETHOD
+
+        METHOD getIsOn()
+            RETURN isOn
+        ENDMETHOD
+
+        METHOD getPowerUsage()
+            RETURN 0.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS SmartLight EXTENDS Device
+        PRIVATE ATTRIBUTES:
+            brightnessLevel : Integer
+
+        CONSTRUCTOR(dName, location, brightness)
+            CALL SUPER_CONSTRUCTOR(dName, location)
+            SET brightnessLevel = brightness
+        ENDCONSTRUCTOR
+
+        METHOD getPowerUsage()
+            IF CALL getIsOn() Equals FALSE THEN
+                RETURN 0.0
+            ENDIF
+            RETURN brightnessLevel * 0.15
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS SmartThermostat EXTENDS Device
+        PRIVATE ATTRIBUTES:
+            targetTemperature : Double
+            coolingIntensity : Double
+
+        CONSTRUCTOR(dName, location, target, intensity)
+            CALL SUPER_CONSTRUCTOR(dName, location)
+            SET targetTemperature = target
+            SET coolingIntensity = intensity
+        ENDCONSTRUCTOR
+
+        METHOD getPowerUsage()
+            IF CALL getIsOn() Equals FALSE THEN
+                RETURN 0.0
+            ENDIF
+            RETURN coolingIntensity * 12.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS SmartCamera EXTENDS Device
+        PRIVATE ATTRIBUTES:
+            isRecording : Boolean
+            storageObj : StorageUnit
+
+        CONSTRUCTOR(dName, location, strg)
+            CALL SUPER_CONSTRUCTOR(dName, location)
+            SET isRecording = FALSE
+            SET storageObj = strg
+        ENDCONSTRUCTOR
+
+        METHOD startRecording()
+            IF CALL storageObj.hasSpace(5.0) Equals FALSE THEN
+                DISPLAY "Recording Terminated: Storage unit is full!"
+                SET isRecording = FALSE
+                RETURN FALSE
+            ENDIF
+            SET isRecording = TRUE
+            CALL storageObj.consumeSpace(5.0)
+            DISPLAY "Camera successfully started recording."
+            RETURN TRUE
+        ENDMETHOD
+
+        METHOD getPowerUsage()
+            IF CALL getIsOn() Equals FALSE THEN
+                RETURN 0.0
+            ENDIF
+            IF isRecording Equals TRUE THEN
+                RETURN 25.0
+            ELSE
+                RETURN 5.0
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Room
+        PRIVATE ATTRIBUTES:
+            roomName : String
+            devicesList : List of Device
+
+        CONSTRUCTOR(name)
+            SET roomName = name
+            SET devicesList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD installDevice(deviceObj)
+            ADD deviceObj TO devicesList
+        ENDMETHOD
+
+        METHOD calculateTotalPowerUsage()
+            SET totalPower = 0.0
+            SET totalDevices = SIZE OF devicesList
+            
+            REPEAT FROM i = 0 TO totalDevices - 1
+                SET totalPower = totalPower + CALL devicesList[i].getPowerUsage()
+            ENDREPEAT
+            
+            RETURN totalPower
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE LivingRoom FROM Room("Main Living Room")
+    
+    CREATE Lamp FROM SmartLight("LED Chandelier", "Living Room", 80)
+    CREATE NestThermostat FROM SmartThermostat("Nest V3", "Living Room", 22.0, 4.5)
+    
+    CREATE MemoryCard FROM StorageUnit(32.0, 30.0)
+    CREATE SecurityCam FROM SmartCamera("Front Door Cam", "Living Room", MemoryCard)
+
+    CALL LivingRoom.installDevice(Lamp)
+    CALL LivingRoom.installDevice(NestThermostat)
+    CALL LivingRoom.installDevice(SecurityCam)
+
+    CALL Lamp.turnOn()
+    CALL NestThermostat.turnOn()
+    CALL SecurityCam.turnOn()
+    
+    CALL SecurityCam.startRecording() // Will consume 5GB but has only 2GB left -> Should fail
+
+    DISPLAY "Smart Home Command Dashboard"
+    DISPLAY "Total Real-time Room Power Consumption: " + CALL LivingRoom.calculateTotalPowerUsage() + " Watts"
+
+END
+STOP
+
