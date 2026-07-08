@@ -1042,3 +1042,134 @@ BEGIN
 END
 STOP
 
+
+
+
+301
+
+
+START
+BEGIN
+
+    CLASS CoverImage
+        PRIVATE ATTRIBUTES:
+            filePath : String
+            dimensions : String
+
+        CONSTRUCTOR(path, dims)
+            SET filePath = path
+            SET dimensions = dims
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Publication
+        PRIVATE ATTRIBUTES:
+            title : String
+            author : String
+            totalPageCount : Integer
+            cover : CoverImage
+
+        CONSTRUCTOR(tlt, auth, pages, cvr)
+            SET title = tlt
+            SET author = auth
+            SET totalPageCount = pages
+            SET cover = cvr
+        ENDCONSTRUCTOR
+
+        METHOD getTitle()
+            RETURN title
+        ENDMETHOD
+
+        METHOD getProgress()
+            RETURN 0.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Novel EXTENDS Publication
+        PRIVATE ATTRIBUTES:
+            currentPageReached : Integer
+
+        CONSTRUCTOR(tlt, auth, pages, cvr, current)
+            CALL SUPER_CONSTRUCTOR(tlt, auth, pages, cvr)
+            SET currentPageReached = current
+        ENDCONSTRUCTOR
+
+        METHOD getProgress()
+            SET total = totalPageCount
+            IF total Equals 0 THEN
+                RETURN 0.0
+            ENDIF
+            RETURN (currentPageReached / total) * 100.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Magazine EXTENDS Publication
+        PRIVATE ATTRIBUTES:
+            totalArticlesCount : Integer
+            openedArticlesCount : Integer
+
+        CONSTRUCTOR(tlt, auth, pages, cvr, totalArts, openedArts)
+            CALL SUPER_CONSTRUCTOR(tlt, auth, pages, cvr)
+            SET totalArticlesCount = totalArts
+            SET openedArticlesCount = openedArts
+        ENDCONSTRUCTOR
+
+        METHOD getProgress()
+            IF totalArticlesCount Equals 0 THEN
+                RETURN 0.0
+            ENDIF
+            RETURN (openedArticlesCount / totalArticlesCount) * 100.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Audiobook EXTENDS Publication
+        PRIVATE ATTRIBUTES:
+            totalDurationSeconds : Double
+            listenedSeconds : Double
+
+        CONSTRUCTOR(tlt, auth, pages, cvr, totalSecs, listenedSecs)
+            CALL SUPER_CONSTRUCTOR(tlt, auth, pages, cvr)
+            SET totalDurationSeconds = totalSecs
+            SET listenedSeconds = listenedSecs
+        ENDCONSTRUCTOR
+
+        METHOD getProgress()
+            IF totalDurationSeconds Equals 0.0 THEN
+                RETURN 0.0
+            ENDIF
+            RETURN (listenedSeconds / totalDurationSeconds) * 100.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Library
+        PRIVATE ATTRIBUTES:
+            libraryID : Integer
+            publicationsList : List of Publication
+
+        CONSTRUCTOR(id)
+            SET libraryID = id
+            SET publicationsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addPublication(pubObj)
+            ADD pubObj TO publicationsList
+        ENDMETHOD
+
+        METHOD getPublicationsCount()
+            RETURN SIZE OF publicationsList
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE CustomCover FROM CoverImage("/images/cipher_cover.png", "800x1200")
+    CREATE Novel_Cipher FROM Novel("The Chronomancer's Cipher", "Al-Monther", 350, CustomCover, 175)
+    
+    CREATE ReaderLibrary FROM Library(1)
+    CALL ReaderLibrary.addPublication(Novel_Cipher)
+
+    DISPLAY "E-book Reader Engine Overview"
+    DISPLAY "Total Digital Library Stock: " + CALL ReaderLibrary.getPublicationsCount()
+    DISPLAY "Current Publication Title: " + CALL Novel_Cipher.getTitle()
+    DISPLAY "Calculated Reading Progress Percentage: " + CALL Novel_Cipher.getProgress() + "%"
+
+END
+STOP
