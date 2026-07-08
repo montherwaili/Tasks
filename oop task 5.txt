@@ -917,3 +917,128 @@ BEGIN
 
 END
 STOP
+
+
+
+300
+
+START
+BEGIN
+
+    CLASS StaffMember
+        PRIVATE ATTRIBUTES:
+            name : String
+            employeeID : Integer
+
+        CONSTRUCTOR(sName, id)
+            SET name = sName
+            SET employeeID = id
+        ENDCONSTRUCTOR
+
+        METHOD getName()
+            RETURN name
+        ENDMETHOD
+
+        METHOD performRoleDuty()
+            RETURN "Executing generic clinical staff attendance duty."
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Doctor EXTENDS StaffMember
+        PRIVATE ATTRIBUTES:
+            medicalLicenceNumber : String
+
+        CONSTRUCTOR(sName, id, licence)
+            CALL SUPER_CONSTRUCTOR(sName, id)
+            SET medicalLicenceNumber = licence
+        ENDCONSTRUCTOR
+
+        METHOD performRoleDuty()
+            RETURN "Reviewing diagnoses and officially approving patient treatments."
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Surgeon EXTENDS Doctor
+        PRIVATE ATTRIBUTES:
+            specialtySurgicalRoom : String
+
+        CONSTRUCTOR(sName, id, licence, theaterNum)
+            CALL SUPER_CONSTRUCTOR(sName, id, licence)
+            SET specialtySurgicalRoom = theaterNum
+        ENDCONSTRUCTOR
+
+        METHOD performRoleDuty()
+            RETURN "Reviewing diagnoses, approving treatments, and conducting major operations."
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Nurse EXTENDS StaffMember
+        PRIVATE ATTRIBUTES:
+            nursingLicenseType : String
+
+        CONSTRUCTOR(sName, id, type)
+            CALL SUPER_CONSTRUCTOR(sName, id)
+            SET nursingLicenseType = type
+        ENDCONSTRUCTOR
+
+        METHOD performRoleDuty()
+            RETURN "Administering prescribed medication and recording critical patient vital signs."
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Shift
+        PRIVATE ATTRIBUTES:
+            startTime : Integer
+            endTime : Integer
+            assignedStaff : StaffMember
+
+        CONSTRUCTOR(start, end, staffObj)
+            SET startTime = start
+            SET endTime = end
+            SET assignedStaff = staffObj
+        ENDCONSTRUCTOR
+
+        METHOD getAssignedStaff()
+            RETURN assignedStaff
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Ward
+        PRIVATE ATTRIBUTES:
+            wardName : String
+            shiftsList : List of Shift
+
+        CONSTRUCTOR(name)
+            SET wardName = name
+            SET shiftsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD scheduleShift(shiftObj)
+            ADD shiftObj TO shiftsList
+            DISPLAY "Shift successfully added to the ward master schedule."
+        ENDMETHOD
+
+        METHOD getShiftsCount()
+            RETURN SIZE OF shiftsList
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE EmergencyWard FROM Ward("ICU - Emergency Ward")
+    
+    CREATE Staff_Nurse FROM Nurse("Mona Al-Riyami", 301, "Registered Nurse")
+    CREATE Staff_Surgeon FROM Surgeon("Dr. Monther Al-Waili", 7015, "M-LIC-994", "Operating Theater 4")
+
+    CREATE Shift_1 FROM Shift(700, 1500, Staff_Nurse)
+    CREATE Shift_2 FROM Shift(1500, 2300, Staff_Surgeon)
+
+    CALL EmergencyWard.scheduleShift(Shift_1)
+    CALL EmergencyWard.scheduleShift(Shift_2)
+
+    DISPLAY "Hospital Ward Scheduling Blueprint"
+    DISPLAY "Total active ward shifts logged: " + CALL EmergencyWard.getShiftsCount()
+    DISPLAY "Shift 1 Duty: " + CALL CALL Shift_1.getAssignedStaff().performRoleDuty()
+    DISPLAY "Shift 2 Duty (Surgeon): " + CALL CALL Shift_2.getAssignedStaff().performRoleDuty()
+
+END
+STOP
+
