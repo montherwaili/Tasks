@@ -1,0 +1,128 @@
+Task 293
+
+
+
+START
+BEGIN
+
+    CLASS Shape
+        PRIVATE ATTRIBUTES:
+            color : String
+            positionX : Integer
+            positionY : Integer
+
+        CONSTRUCTOR(clr, x, y)
+            SET color = clr
+            SET positionX = x
+            SET positionY = y
+        ENDCONSTRUCTOR
+
+        METHOD getColor()
+            RETURN color
+        ENDMETHOD
+
+        METHOD calculateArea()
+            RETURN 0.0
+        ENDMETHOD
+
+        METHOD calculatePerimeter()
+            RETURN 0.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Circle EXTENDS Shape
+        PRIVATE ATTRIBUTES:
+            radius : Double
+
+        CONSTRUCTOR(clr, x, y, r)
+            CALL SUPER_CONSTRUCTOR(clr, x, y)
+            SET radius = r
+        ENDCONSTRUCTOR
+
+        METHOD calculateArea()
+            RETURN 3.14 * radius * radius
+        ENDMETHOD
+
+        METHOD calculatePerimeter()
+            RETURN 2.0 * 3.14 * radius
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Rectangle EXTENDS Shape
+        PRIVATE ATTRIBUTES:
+            width : Double
+            height : Double
+
+        CONSTRUCTOR(clr, x, y, w, h)
+            CALL SUPER_CONSTRUCTOR(clr, x, y)
+            SET width = w
+            SET height = h
+        ENDCONSTRUCTOR
+
+        METHOD calculateArea()
+            RETURN width * height
+        ENDMETHOD
+
+        METHOD calculatePerimeter()
+            RETURN 2.0 * (width + height)
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Triangle EXTENDS Shape
+        PRIVATE ATTRIBUTES:
+            sideA : Double
+            sideB : Double
+            sideC : Double
+
+        CONSTRUCTOR(clr, x, y, a, b, c)
+            CALL SUPER_CONSTRUCTOR(clr, x, y)
+            SET sideA = a
+            SET sideB = b
+            SET sideC = c
+        ENDCONSTRUCTOR
+
+        METHOD calculateArea()
+            SET s = (sideA + sideB + sideC) / 2.0
+            RETURN CALL MATH_SQRT(s * (s - sideA) * (s - sideB) * (s - sideC))
+        ENDMETHOD
+
+        METHOD calculatePerimeter()
+            RETURN sideA + sideB + sideC
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Canvas
+        PRIVATE ATTRIBUTES:
+            canvasID : Integer
+            shapesCollection : List of Shape
+
+        CONSTRUCTOR(id)
+            SET canvasID = id
+            SET shapesCollection = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addShape(shapeObj)
+            ADD shapeObj TO shapesCollection
+            DISPLAY "Shape successfully drawn on the canvas."
+        ENDMETHOD
+
+        METHOD getShapesCount()
+            RETURN SIZE OF shapesCollection
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE MyCanvas FROM Canvas(1)
+
+    CREATE RedCircle FROM Circle("Red", 10, 20, 5.0)
+    CREATE BlueRectangle FROM Rectangle("Blue", 0, 0, 4.0, 6.0)
+
+    CALL MyCanvas.addShape(RedCircle)
+    CALL MyCanvas.addShape(BlueRectangle)
+
+    DISPLAY "Total Shapes on Canvas: " + CALL MyCanvas.getShapesCount()
+    DISPLAY "Circle Color: " + CALL RedCircle.getColor()
+    DISPLAY "Circle Area: " + CALL RedCircle.calculateArea()
+    DISPLAY "Rectangle Perimeter: " + CALL BlueRectangle.calculatePerimeter()
+
+END
+STOP
