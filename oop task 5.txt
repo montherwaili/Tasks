@@ -126,3 +126,125 @@ BEGIN
 
 END
 STOP
+
+
+
+294
+
+
+START
+BEGIN
+
+    CLASS Employee
+        PRIVATE ATTRIBUTES:
+            name : String
+            employeeID : Integer
+            hireDate : String
+
+        CONSTRUCTOR(empName, id, hDate)
+            SET name = empName
+            SET employeeID = id
+            SET hireDate = hDate
+        ENDCONSTRUCTOR
+
+        METHOD getName()
+            RETURN name
+        ENDMETHOD
+
+        METHOD calculatePay()
+            RETURN 0.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS SalariedEmployee EXTENDS Employee
+        PRIVATE ATTRIBUTES:
+            fixedMonthlySalary : Double
+
+        CONSTRUCTOR(empName, id, hDate, salary)
+            CALL SUPER_CONSTRUCTOR(empName, id, hDate)
+            SET fixedMonthlySalary = salary
+        ENDCONSTRUCTOR
+
+        METHOD calculatePay()
+            RETURN fixedMonthlySalary
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS HourlyEmployee EXTENDS Employee
+        PRIVATE ATTRIBUTES:
+            hoursWorked : Integer
+            hourlyRate : Double
+
+        CONSTRUCTOR(empName, id, hDate, hours, rate)
+            CALL SUPER_CONSTRUCTOR(empName, id, hDate)
+            SET hoursWorked = hours
+            SET hourlyRate = rate
+        ENDCONSTRUCTOR
+
+        METHOD calculatePay()
+            RETURN hoursWorked * hourlyRate
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS CommissionEmployee EXTENDS Employee
+        PRIVATE ATTRIBUTES:
+            basePay : Double
+            salesAmount : Double
+            commissionRate : Double
+
+        CONSTRUCTOR(empName, id, hDate, bPay, sales, cRate)
+            CALL SUPER_CONSTRUCTOR(empName, id, hDate)
+            SET basePay = bPay
+            SET salesAmount = sales
+            SET commissionRate = cRate
+        ENDCONSTRUCTOR
+
+        METHOD calculatePay()
+            RETURN basePay + (salesAmount * commissionRate)
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Payroll
+        PRIVATE ATTRIBUTES:
+            payrollID : Integer
+            employeesList : List of Employee
+
+        CONSTRUCTOR(id)
+            SET payrollID = id
+            SET employeesList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addEmployee(empObj)
+            ADD empObj TO employeesList
+            DISPLAY "Employee successfully added to payroll system."
+        ENDMETHOD
+
+        METHOD calculateTotalPayout()
+            SET totalPayout = 0.0
+            SET totalEmployees = SIZE OF employeesList
+            
+            REPEAT FROM i = 0 TO totalEmployees - 1
+                SET totalPayout = totalPayout + CALL employeesList[i].calculatePay()
+            ENDREPEAT
+            
+            RETURN totalPayout
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE CompanyPayroll FROM Payroll(1)
+
+    CREATE Emp_1 FROM SalariedEmployee("Monther Al-Waili", 7015, "2026-01-01", 1200.00)
+    CREATE Emp_2 FROM HourlyEmployee("Ahmed Al-Balushi", 8022, "2026-03-15", 160, 5.00)
+
+    CALL CompanyPayroll.addEmployee(Emp_1)
+    CALL CompanyPayroll.addEmployee(Emp_2)
+
+    DISPLAY "Payroll System Live Overview"
+    DISPLAY "Employee 1 Name: " + CALL Emp_1.getName()
+    DISPLAY "Employee 1 Calculated Pay: OMR " + CALL Emp_1.calculatePay()
+    DISPLAY "Employee 2 Calculated Pay: OMR " + CALL Emp_2.calculatePay()
+    DISPLAY "Total Corporate Payroll Payout: OMR " + CALL CompanyPayroll.calculateTotalPayout()
+
+END
+STOP
+
