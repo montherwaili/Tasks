@@ -364,3 +364,175 @@ BEGIN
 END
 STOP
 
+
+
+
+296
+
+
+START
+BEGIN
+
+    CLASS PaymentMethod
+        PRIVATE ATTRIBUTES:
+            amount : Double
+            status : String
+
+        CONSTRUCTOR(amt)
+            SET amount = amt
+            SET status = "Pending"
+        ENDCONSTRUCTOR
+
+        METHOD getAmount()
+            RETURN amount
+        ENDMETHOD
+
+        METHOD getStatus()
+            RETURN status
+        ENDMETHOD
+
+        METHOD setStatus(newStatus)
+            SET status = newStatus
+        ENDMETHOD
+
+        METHOD processPayment()
+            RETURN FALSE
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS CreditCardPayment EXTENDS PaymentMethod
+        PRIVATE ATTRIBUTES:
+            cardNumber : String
+            expiryDate : String
+
+        CONSTRUCTOR(amt, card, expiry)
+            CALL SUPER_CONSTRUCTOR(amt)
+            SET cardNumber = card
+            SET expiryDate = expiry
+        ENDCONSTRUCTOR
+
+        METHOD processPayment()
+            SET length = CALL cardNumber.length()
+            IF length Equals 16 THEN
+                CALL setStatus("Completed")
+                RETURN TRUE
+            ELSE
+                CALL setStatus("Failed")
+                RETURN FALSE
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS BankTransferPayment EXTENDS PaymentMethod
+        PRIVATE ATTRIBUTES:
+            accountNumber : String
+            bankCode : String
+
+        CONSTRUCTOR(amt, acc, code)
+            CALL SUPER_CONSTRUCTOR(amt)
+            SET accountNumber = acc
+            SET bankCode = code
+        ENDCONSTRUCTOR
+
+        METHOD processPayment()
+            CALL setStatus("Completed")
+            RETURN TRUE
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS WalletPayment EXTENDS PaymentMethod
+        PRIVATE ATTRIBUTES:
+            walletID : String
+            availableBalance : Double
+
+        CONSTRUCTOR(amt, wallet, balance)
+            CALL SUPER_CONSTRUCTOR(amt)
+            SET walletID = wallet
+            SET availableBalance = balance
+        ENDCONSTRUCTOR
+
+        METHOD processPayment()
+            SET neededAmount = CALL getAmount()
+            IF availableBalance Greater Than Or Equals neededAmount THEN
+                CALL setStatus("Completed")
+                RETURN TRUE
+            ELSE
+                CALL setStatus("Failed")
+                RETURN FALSE
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS OrderItem
+        PRIVATE ATTRIBUTES:
+            itemName : String
+            itemPrice : Double
+
+        CONSTRUCTOR(name, price)
+            SET itemName = name
+            SET itemPrice = price
+        ENDCONSTRUCTOR
+
+        METHOD getItemPrice()
+            RETURN itemPrice
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Order
+        PRIVATE ATTRIBUTES:
+            orderID : Integer
+            itemsList : List of OrderItem
+            paymentObj : PaymentMethod
+
+        CONSTRUCTOR(id)
+            SET orderID = id
+            SET itemsList = INITIALIZE EMPTY LIST
+            SET paymentObj = NULL
+        ENDCONSTRUCTOR
+
+        METHOD addItem(itemObj)
+            ADD itemObj TO itemsList
+        ENDMETHOD
+
+        METHOD calculateTotal()
+            SET totalSum = 0.0
+            SET totalItems = SIZE OF itemsList
+            
+            REPEAT FROM i = 0 TO totalItems - 1
+                SET totalSum = totalSum + CALL itemsList[i].getItemPrice()
+            ENDREPEAT
+            
+            RETURN totalSum
+        ENDMETHOD
+
+        METHOD setPayment(payMethodObj)
+            SET paymentObj = payMethodObj
+        ENDMETHOD
+
+        METHOD checkout()
+            SET success = CALL paymentObj.processPayment()
+            IF success Equals TRUE THEN
+                DISPLAY "Purchase Completed Successfully!"
+            ELSE
+                DISPLAY "Purchase Terminated: Payment Declined!"
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE StoreOrder FROM Order(88021)
+    CREATE Item_1 FROM OrderItem("Gaming Mouse", 25.00)
+    CREATE Item_2 FROM OrderItem("Mechanical Keyboard", 45.00)
+
+    CALL StoreOrder.addItem(Item_1)
+    CALL StoreOrder.addItem(Item_2)
+
+    SET billTotal = CALL StoreOrder.calculateTotal()
+    CREATE MyWalletPay FROM WalletPayment(billTotal, "W-7015", 100.00)
+    
+    CALL StoreOrder.setPayment(MyWalletPay)
+    CALL StoreOrder.checkout()
+
+    DISPLAY "Order Settlement Status: " + CALL MyWalletPay.getStatus()
+
+END
+STOP
