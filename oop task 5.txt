@@ -660,3 +660,136 @@ BEGIN
 
 END
 STOP
+
+
+
+
+
+
+298
+
+
+
+
+START
+BEGIN
+
+    CLASS Engine
+        PRIVATE ATTRIBUTES:
+            horsepower : Integer
+            fuelEfficiency : Double
+
+        CONSTRUCTOR(hp, eff)
+            SET horsepower = hp
+            SET fuelEfficiency = eff
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Stop
+        PRIVATE ATTRIBUTES:
+            address : String
+            packageName : String
+
+        CONSTRUCTOR(addr, pkg)
+            SET address = addr
+            SET packageName = pkg
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS Vehicle
+        PRIVATE ATTRIBUTES:
+            licencePlate : String
+            fuelLevel : Double
+            engineObj : Engine
+
+        CONSTRUCTOR(plate, fuel, eng)
+            SET licencePlate = plate
+            SET fuelLevel = fuel
+            SET engineObj = eng
+        ENDCONSTRUCTOR
+
+        METHOD calculateDeliveryTime(distance)
+            RETURN distance / 40.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Van EXTENDS Vehicle
+        PRIVATE ATTRIBUTES:
+            cargoCapacity : Double
+
+        CONSTRUCTOR(plate, fuel, eng, cap)
+            CALL SUPER_CONSTRUCTOR(plate, fuel, eng)
+            SET cargoCapacity = cap
+        ENDCONSTRUCTOR
+
+        METHOD calculateDeliveryTime(distance)
+            RETURN distance / 50.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Motorbike EXTENDS Vehicle
+        PRIVATE ATTRIBUTES:
+            hasStorageBox : Boolean
+
+        CONSTRUCTOR(plate, fuel, eng, box)
+            CALL SUPER_CONSTRUCTOR(plate, fuel, eng)
+            SET hasStorageBox = box
+        ENDCONSTRUCTOR
+
+        METHOD calculateDeliveryTime(distance)
+            RETURN distance / 70.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Truck EXTENDS Vehicle
+        PRIVATE ATTRIBUTES:
+            weightLimit : Double
+
+        CONSTRUCTOR(plate, fuel, eng, limit)
+            CALL SUPER_CONSTRUCTOR(plate, fuel, eng)
+            SET weightLimit = limit
+        ENDCONSTRUCTOR
+
+        METHOD calculateDeliveryTime(distance)
+            RETURN distance / 30.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Route
+        PRIVATE ATTRIBUTES:
+            routeID : Integer
+            stopsList : List of Stop
+
+        CONSTRUCTOR(id)
+            SET routeID = id
+            SET stopsList = INITIALIZE EMPTY LIST
+        ENDCONSTRUCTOR
+
+        METHOD addStop(stopObj)
+            ADD stopObj TO stopsList
+        ENDMETHOD
+
+        METHOD getStopsCount()
+            RETURN SIZE OF stopsList
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE TruckEngine FROM Engine(450, 8.5)
+    CREATE HeavyTruck FROM Truck("OM-9942-A", 120.0, TruckEngine, 15000.0)
+    
+    CREATE DeliveryRoute FROM Route(401)
+    CREATE Stop_1 FROM Stop("Mina Al Fahal", "Chemicals")
+    CREATE Stop_2 FROM Stop("Rusayl Industrial", "Equipment")
+
+    CALL DeliveryRoute.addStop(Stop_1)
+    CALL DeliveryRoute.addStop(Stop_2)
+
+    DISPLAY "Logistics Fleet Live Diagnostics"
+    DISPLAY "Total Scheduled Route Stops: " + CALL DeliveryRoute.getStopsCount()
+    DISPLAY "Truck Estimated Delivery Time for 150KM: " + CALL HeavyTruck.calculateDeliveryTime(150.0) + " Hours"
+
+END
+STOP
+
+
+
