@@ -455,12 +455,12 @@ BEGIN
             monthlyQuotaHours : Integer
 
         CONSTRUCTOR(name, quota)
-            SET planName = name
-            SET monthlyQuotaHours = quota
+            SET this.planName TO name
+            SET this.monthlyQuotaHours TO quota
         ENDCONSTRUCTOR
 
         METHOD getMonthlyQuota()
-            RETURN monthlyQuotaHours
+            RETURN this.monthlyQuotaHours
         ENDMETHOD
     ENDCLASS
 
@@ -470,12 +470,12 @@ BEGIN
             roomName : String
 
         CONSTRUCTOR(id, rName)
-            SET roomID = id
-            SET roomName = rName
+            SET this.roomID TO id
+            SET this.roomName TO rName
         ENDCONSTRUCTOR
 
         METHOD getRoomID()
-            RETURN roomID
+            RETURN this.roomID
         ENDMETHOD
     ENDCLASS
 
@@ -483,32 +483,32 @@ BEGIN
         PRIVATE ATTRIBUTES:
             bookingID : Integer
             roomObj : Room
-            startTime : Integer 
-            endTime : Integer  
+            startHour : Integer 
+            endHour : Integer   
             durationHours : Integer
 
         CONSTRUCTOR(id, rm, start, end, duration)
-            SET bookingID = id
-            SET roomObj = rm
-            SET startTime = start
-            SET endTime = end
-            SET durationHours = duration
+            SET this.bookingID TO id
+            SET this.roomObj TO rm
+            SET this.startHour TO start
+            SET this.endHour TO end
+            SET this.durationHours TO duration
         ENDCONSTRUCTOR
 
         METHOD getDurationHours()
-            RETURN durationHours
+            RETURN this.durationHours
         ENDMETHOD
 
-        METHOD getStartTime()
-            RETURN startTime
+        METHOD getStartHour()
+            RETURN this.startHour
         ENDMETHOD
 
-        METHOD getEndTime()
-            RETURN endTime
+        METHOD getEndHour()
+            RETURN this.endHour
         ENDMETHOD
 
         METHOD getRoomObj()
-            RETURN roomObj
+            RETURN this.roomObj
         ENDMETHOD
     ENDCLASS
 
@@ -520,38 +520,38 @@ BEGIN
             activeBookings : List of Booking
 
         CONSTRUCTOR(id, mName, plan)
-            SET memberID = id
-            SET name = mName
-            SET planDetails = plan
-            SET activeBookings = INITIALIZE EMPTY LIST
+            SET this.memberID TO id
+            SET this.name TO mName
+            SET this.planDetails TO plan
+            SET this.activeBookings TO LIST []
         ENDCONSTRUCTOR
 
         METHOD calculateUsedHours()
-            SET totalUsed = 0
-            SET totalBookings = SIZE OF activeBookings
+            SET totalUsed TO 0
+            SET totalBookings TO SIZE OF this.activeBookings
             
             REPEAT FROM i = 0 TO totalBookings - 1
-                SET totalUsed = totalUsed + CALL activeBookings[i].getDurationHours()
+                SET totalUsed TO totalUsed + CALL this.activeBookings[i].getDurationHours()
             ENDREPEAT
             
             RETURN totalUsed
         ENDMETHOD
 
         METHOD hasTimeOverlap(newBooking)
-            SET totalBookings = SIZE OF activeBookings
-            SET targetRoomID = CALL CALL newBooking.getRoomObj().getRoomID()
-            SET newStart = CALL newBooking.getStartTime()
-            SET newEnd = CALL newBooking.getEndTime()
+            SET totalBookings TO SIZE OF this.activeBookings
+            SET targetRoomID TO CALL CALL newBooking.getRoomObj().getRoomID()
+            SET newStart TO CALL newBooking.getStartHour()
+            SET newEnd TO CALL newBooking.getEndHour()
 
             REPEAT FROM i = 0 TO totalBookings - 1
-                SET existingBooking = activeBookings[i]
-                SET existingRoomID = CALL CALL existingBooking.getRoomObj().getRoomID()
+                SET existingBooking TO this.activeBookings[i]
+                SET existingRoomID TO CALL CALL existingBooking.getRoomObj().getRoomID()
                 
-                IF existingRoomID == targetRoomID THEN
-                    SET extStart = CALL existingBooking.getStartTime()
-                    SET extEnd = CALL existingBooking.getEndTime()
+                IF existingRoomID Equals targetRoomID THEN
+                    SET extStart TO CALL existingBooking.getStartHour()
+                    SET extEnd TO CALL existingBooking.getEndHour()
                     
-                    IF newStart < extEnd AND newEnd > extStart THEN
+                    IF newStart Less Than extEnd AND newEnd Greater Than extStart THEN
                         RETURN TRUE
                     ENDIF
                 ENDIF
@@ -560,21 +560,21 @@ BEGIN
         ENDMETHOD
 
         METHOD requestBooking(bookingObj)
-            SET usedHours = CALL calculateUsedHours()
-            SET quotaLimit = CALL planDetails.getMonthlyQuota()
-            SET requestedHours = CALL bookingObj.getDurationHours()
+            SET usedHours TO CALL this.calculateUsedHours()
+            SET quotaLimit TO CALL this.planDetails.getMonthlyQuota()
+            SET requestedHours TO CALL bookingObj.getDurationHours()
 
-            IF usedHours + requestedHours > quotaLimit THEN
+            IF usedHours + requestedHours Greater Than quotaLimit THEN
                 DISPLAY "Booking Refused: Member has exceeded their monthly plan quota hours!"
                 RETURN FALSE
             ENDIF
 
-            IF CALL hasTimeOverlap(bookingObj) == TRUE THEN
+            IF CALL this.hasTimeOverlap(bookingObj) Equals TRUE THEN
                 DISPLAY "Booking Refused: Time slot overlap detected for this meeting room!"
                 RETURN FALSE
             ENDIF
 
-            ADD bookingObj TO activeBookings
+            ADD bookingObj TO this.activeBookings
             DISPLAY "Booking successfully confirmed and registered."
             RETURN TRUE
         ENDMETHOD
@@ -584,8 +584,8 @@ BEGIN
     CREATE MeetingRoom_A FROM Room(201, "Conference Room A")
     CREATE Member_Monther FROM Member(7015, "Monther Al-Waili", ExecutivePlan)
 
-    CREATE BOOK_1 FROM Booking(1, MeetingRoom_A, 1000, 1300, 3)
-    CREATE BOOK_2 FROM Booking(2, MeetingRoom_A, 1100, 1400, 3) 
+    CREATE BOOK_1 FROM Booking(1, MeetingRoom_A, 10, 13, 3)
+    CREATE BOOK_2 FROM Booking(2, MeetingRoom_A, 11, 14, 3) 
 
     CALL Member_Monther.requestBooking(BOOK_1)
     CALL Member_Monther.requestBooking(BOOK_2) 
