@@ -357,3 +357,153 @@ BEGIN
 END
 STOP
 
+
+
+
+306
+
+
+START
+BEGIN
+
+    CLASS MeterReading
+        PRIVATE ATTRIBUTES:
+            startReading : Integer
+            endReading : Integer
+
+        CONSTRUCTOR(start, end)
+            SET this.startReading TO start
+            SET this.endReading TO end
+        ENDCONSTRUCTOR
+
+        METHOD calculateConsumption()
+            RETURN endReading - startReading
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Bill
+        PRIVATE ATTRIBUTES:
+            billingPeriod : String
+            dueDate : String
+            meterReadingObj : MeterReading
+
+        CONSTRUCTOR(period, due, reading)
+            SET this.billingPeriod TO period
+            SET this.dueDate TO due
+            SET this.meterReadingObj TO reading
+        ENDCONSTRUCTOR
+
+        METHOD getMeterReading()
+            RETURN this.meterReadingObj
+        ENDMETHOD
+
+        METHOD calculateAmountOwed()
+            RETURN 0.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS ElectricityBill EXTENDS Bill
+        PRIVATE ATTRIBUTES:
+            peakRate : Double
+            offPeakRate : Double
+            isPeakTime : Boolean
+
+        CONSTRUCTOR(period, due, reading, pRate, opRate, peakFlag)
+            CALL SUPER_CONSTRUCTOR(period, due, reading)
+            SET this.peakRate TO pRate
+            SET this.offPeakRate TO opRate
+            SET this.isPeakTime TO peakFlag
+        ENDCONSTRUCTOR
+
+        METHOD calculateAmountOwed()
+            SET reading TO CALL getMeterReading()
+            SET consumption TO CALL reading.calculateConsumption()
+            IF isPeakTime Equals TRUE THEN
+                RETURN consumption * peakRate
+            ELSE
+                RETURN consumption * offPeakRate
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS WaterBill EXTENDS Bill
+        PRIVATE ATTRIBUTES:
+            flatRatePerLiter : Double
+            fixedStandingCharge : Double
+
+        CONSTRUCTOR(period, due, reading, rate, charge)
+            CALL SUPER_CONSTRUCTOR(period, due, reading)
+            SET this.flatRatePerLiter TO rate
+            SET this.fixedStandingCharge TO charge
+        ENDCONSTRUCTOR
+
+        METHOD calculateAmountOwed()
+            SET reading TO CALL getMeterReading()
+            SET consumption TO CALL reading.calculateConsumption()
+            RETURN (consumption * flatRatePerLiter) + fixedStandingCharge
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS GasBill EXTENDS Bill
+        PRIVATE ATTRIBUTES:
+            standardRate : Double
+            isWinterSeason : Boolean
+
+        CONSTRUCTOR(period, due, reading, rate, winterFlag)
+            CALL SUPER_CONSTRUCTOR(period, due, reading)
+            SET this.standardRate TO rate
+            SET this.isWinterSeason TO winterFlag
+        ENDCONSTRUCTOR
+
+        METHOD calculateAmountOwed()
+            SET reading TO CALL getMeterReading()
+            SET consumption TO CALL reading.calculateConsumption()
+            SET baselineAmount TO consumption * standardRate
+            IF isWinterSeason Equals TRUE THEN
+                RETURN baselineAmount + (baselineAmount * 0.15)
+            ELSE
+                RETURN baselineAmount
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS CustomerAccount
+        PRIVATE ATTRIBUTES:
+            accountID : Integer
+            billsHistory : List of Bill
+
+        CONSTRUCTOR(id)
+            SET this.accountID TO id
+            SET this.billsHistory TO LIST []
+        ENDCONSTRUCTOR
+
+        METHOD issueBill(billObj)
+            ADD billObj TO this.billsHistory
+            DISPLAY "Utility bill successfully issued and logged under customer account."
+        ENDMETHOD
+
+        METHOD calculateTotalOwedBalance()
+            SET totalOwed TO 0.0
+            SET totalBills TO SIZE OF this.billsHistory
+            
+            REPEAT FROM i = 0 TO totalBills - 1
+                SET totalOwed TO totalOwed + CALL this.billsHistory[i].calculateAmountOwed()
+            ENDREPEAT
+            
+            RETURN totalOwed
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE MontherAccount FROM CustomerAccount(7015)
+    
+    CREATE CurrentReading FROM MeterReading(12400, 12950)
+    CREATE PowerInvoice FROM ElectricityBill("July 2026", "2026-08-01", CurrentReading, 0.024, 0.012, TRUE)
+
+    CALL MontherAccount.issueBill(PowerInvoice)
+
+    DISPLAY "Utility Billing Central Dashboard"
+    DISPLAY "Electricity Statement Invoice Amount: OMR " + CALL PowerInvoice.calculateAmountOwed()
+    DISPLAY "Total Customer Outstanding Balance Owed: OMR " + CALL MontherAccount.calculateTotalOwedBalance()
+
+END
+STOP
