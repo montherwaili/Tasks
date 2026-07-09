@@ -507,3 +507,123 @@ BEGIN
 
 END
 STOP
+
+
+
+307
+
+START
+BEGIN
+
+    CLASS Route
+        PRIVATE ATTRIBUTES:
+            routeID : Integer
+            waypointsList : List of String
+
+        CONSTRUCTOR(id)
+            SET this.routeID TO id
+            SET this.waypointsList TO LIST []
+        ENDCONSTRUCTOR
+
+        METHOD addWaypoint(address)
+            ADD address TO this.waypointsList
+        ENDMETHOD
+
+        METHOD getWaypointsCount()
+            RETURN SIZE OF this.waypointsList
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Ride
+        PRIVATE ATTRIBUTES:
+            rideID : Integer
+            pickupLocation : String
+            dropOffLocation : String
+            distanceKM : Double
+            rideRoute : Route
+
+        CONSTRUCTOR(id, pickup, dropoff, distance, routeObj)
+            SET this.rideID TO id
+            SET this.pickupLocation TO pickup
+            SET this.dropOffLocation TO dropoff
+            SET this.distanceKM TO distance
+            SET this.rideRoute TO routeObj
+        ENDCONSTRUCTOR
+
+        METHOD getDistanceKM()
+            RETURN this.distanceKM
+        ENDMETHOD
+
+        METHOD calculateFare()
+            RETURN 0.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS StandardRide EXTENDS Ride
+        PRIVATE ATTRIBUTES:
+            ratePerKM : Double
+
+        CONSTRUCTOR(id, pickup, dropoff, distance, routeObj, rate)
+            CALL SUPER_CONSTRUCTOR(id, pickup, dropoff, distance, routeObj)
+            SET this.ratePerKM TO rate
+        ENDCONSTRUCTOR
+
+        METHOD getRatePerKM()
+            RETURN this.ratePerKM
+        ENDMETHOD
+
+        METHOD calculateFare()
+            SET distance TO CALL this.getDistanceKM()
+            RETURN distance * this.ratePerKM
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS SharedRide EXTENDS StandardRide
+        PRIVATE ATTRIBUTES:
+            numberOfPassengers : Integer
+
+        CONSTRUCTOR(id, pickup, dropoff, distance, routeObj, rate, passengersCount)
+            CALL SUPER_CONSTRUCTOR(id, pickup, dropoff, distance, routeObj, rate)
+            SET this.numberOfPassengers TO passengersCount
+        ENDCONSTRUCTOR
+
+        METHOD calculateFare()
+            SET standardTotal TO CALL SUPER_METHOD_calculateFare()
+            IF this.numberOfPassengers Equals 0 THEN
+                RETURN standardTotal
+            ENDIF
+            RETURN standardTotal / this.numberOfPassengers
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS PremiumRide EXTENDS Ride
+        PRIVATE ATTRIBUTES:
+            premiumRatePerKM : Double
+            comfortSurcharge : Double
+
+        CONSTRUCTOR(id, pickup, dropoff, distance, routeObj, pRate, charge)
+            CALL SUPER_CONSTRUCTOR(id, pickup, dropoff, distance, routeObj)
+            SET this.premiumRatePerKM TO pRate
+            SET this.comfortSurcharge TO charge
+        ENDCONSTRUCTOR
+
+        METHOD calculateFare()
+            SET distance TO CALL this.getDistanceKM()
+            RETURN (distance * this.premiumRatePerKM) + this.comfortSurcharge
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE MyTripRoute FROM Route(77)
+    CALL MyTripRoute.addWaypoint("Al-Mawaleh North")
+    CALL MyTripRoute.addWaypoint("Al-Seeb Street")
+
+    CREATE Trip_1 FROM SharedRide(9942, "Al Badi", "Seeb Mall", 12.0, MyTripRoute, 0.200, 3)
+    CREATE Trip_2 FROM PremiumRide(9943, "Al Badi", "Muscat Airport", 15.0, MyTripRoute, 0.400, 2.500)
+
+    DISPLAY "Ride-Sharing Fleet Allocation System Initialized"
+    DISPLAY "Shared Trip Total Waypoints Traveled: " + CALL MyTripRoute.getWaypointsCount()
+    DISPLAY "Shared Ride Split Fare Cost Per Passenger: OMR " + CALL Trip_1.calculateFare()
+    DISPLAY "Premium Ride Luxury Secure Fare Invoice: OMR " + CALL Trip_2.calculateFare()
+
+END
+STOP
