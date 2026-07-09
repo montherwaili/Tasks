@@ -235,3 +235,125 @@ BEGIN
 
 END
 STOP
+
+
+
+
+305
+
+START
+BEGIN
+
+    CLASS Inventory
+        PRIVATE ATTRIBUTES:
+            maxWeight : Double
+            itemsList : List of String
+
+        CONSTRUCTOR(weight)
+            SET this.maxWeight TO weight
+            SET this.itemsList TO LIST []
+        ENDCONSTRUCTOR
+
+        METHOD addItem(itemName)
+            ADD itemName TO this.itemsList
+        ENDMETHOD
+
+        METHOD getItemsCount()
+            RETURN SIZE OF this.itemsList
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Character
+        PRIVATE ATTRIBUTES:
+            name : String
+            healthValue : Integer
+            characterInventory : Inventory
+
+        CONSTRUCTOR(cName, hp, invWeight)
+            SET this.name TO cName
+            SET this.healthValue TO hp
+            CREATE newInventory FROM Inventory(invWeight)
+            SET this.characterInventory TO newInventory
+        ENDCONSTRUCTOR
+
+        METHOD getName()
+            RETURN this.name
+        ENDMETHOD
+
+        METHOD getInventory()
+            RETURN this.characterInventory
+        ENDMETHOD
+
+        METHOD attack()
+            RETURN "Generic Character Attack"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Warrior EXTENDS Character
+        PRIVATE ATTRIBUTES:
+            meleeStrength : Integer
+            armorRating : Integer
+
+        CONSTRUCTOR(cName, hp, invWeight, strength, armor)
+            CALL SUPER_CONSTRUCTOR(cName, hp, invWeight)
+            SET this.meleeStrength TO strength
+            SET this.armorRating TO armor
+        ENDCONSTRUCTOR
+
+        METHOD attack()
+            RETURN "Slashes powerfully with broadsword dealing physical damage."
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Mage EXTENDS Character
+        PRIVATE ATTRIBUTES:
+            manaPool : Integer
+            spellPower : Integer
+
+        CONSTRUCTOR(cName, hp, invWeight, mana, power)
+            CALL SUPER_CONSTRUCTOR(cName, hp, invWeight)
+            SET this.manaPool TO mana
+            SET this.spellPower TO power
+        ENDCONSTRUCTOR
+
+        METHOD attack()
+            IF manaPool Greater Than 10 THEN
+                SET this.manaPool TO manaPool - 10
+                RETURN "Casts fireball explosion spell utilizing chrono-magic."
+            ELSE
+                RETURN "Insufficient mana! Cast failed."
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Archer EXTENDS Character
+        PRIVATE ATTRIBUTES:
+            arrowSupply : Integer
+
+        CONSTRUCTOR(cName, hp, invWeight, arrows)
+            CALL SUPER_CONSTRUCTOR(cName, hp, invWeight)
+            SET this.arrowSupply TO arrows
+        ENDCONSTRUCTOR
+
+        METHOD attack()
+            IF arrowSupply Greater Than 0 THEN
+                SET this.arrowSupply TO arrowSupply - 1
+                RETURN "Fires piercing diamond arrow from longbow."
+            ELSE
+                RETURN "Out of ammunition! longbow cannot fire."
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE MyHero FROM Mage("Khaled The Sorcerer", 100, 50.0, 50, 85)
+    SET heroInv TO CALL MyHero.getInventory()
+    CALL heroInv.addItem("Ancient Mana Potion")
+
+    DISPLAY "Video Game Engine Initialization Overview"
+    DISPLAY "Active Character Name: " + CALL MyHero.getName()
+    DISPLAY "Inventory Total Carrying Items: " + CALL heroInv.getItemsCount()
+    DISPLAY "Triggering Character Attack Behavior: " + CALL MyHero.attack()
+
+END
+STOP
+
