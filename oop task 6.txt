@@ -117,3 +117,121 @@ BEGIN
 
 END
 STOP
+
+
+
+
+
+
+304
+
+
+
+START
+BEGIN
+
+    CLASS Workout
+        PRIVATE ATTRIBUTES:
+            workoutDate : String
+            durationMinutes : Integer
+
+        CONSTRUCTOR(wDate, duration)
+            SET this.workoutDate TO wDate
+            SET this.durationMinutes TO duration
+        ENDCONSTRUCTOR
+
+        METHOD calculateCalories()
+            RETURN 0.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS RunningWorkout EXTENDS Workout
+        PRIVATE ATTRIBUTES:
+            distanceKM : Double
+            paceMinutesPerKM : Double
+
+        CONSTRUCTOR(wDate, duration, dist, pc)
+            CALL SUPER_CONSTRUCTOR(wDate, duration)
+            SET this.distanceKM TO dist
+            SET this.paceMinutesPerKM TO pc
+        ENDCONSTRUCTOR
+
+        METHOD calculateCalories()
+            RETURN distanceKM * 65.0
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS CyclingWorkout EXTENDS Workout
+        PRIVATE ATTRIBUTES:
+            distanceKM : Double
+            resistanceLevel : Integer
+
+        CONSTRUCTOR(wDate, duration, dist, resist)
+            CALL SUPER_CONSTRUCTOR(wDate, duration)
+            SET this.distanceKM TO dist
+            SET this.resistanceLevel TO resist
+        ENDCONSTRUCTOR
+
+        METHOD calculateCalories()
+            RETURN distanceKM * (40.0 + resistanceLevel)
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS WeightTrainingWorkout EXTENDS Workout
+        PRIVATE ATTRIBUTES:
+            totalSets : Integer
+            repsPerSet : Integer
+
+        CONSTRUCTOR(wDate, duration, sets, reps)
+            CALL SUPER_CONSTRUCTOR(wDate, duration)
+            SET this.totalSets TO sets
+            SET this.repsPerSet TO reps
+        ENDCONSTRUCTOR
+
+        METHOD calculateCalories()
+            RETURN totalSets * repsPerSet * 0.4
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS FitnessLog
+        PRIVATE ATTRIBUTES:
+            logID : Integer
+            workoutsList : List of Workout
+
+        CONSTRUCTOR(id)
+            SET this.logID TO id
+            SET this.workoutsList TO LIST []
+        ENDCONSTRUCTOR
+
+        METHOD logWorkout(workoutObj)
+            ADD workoutObj TO this.workoutsList
+            DISPLAY "Workout session successfully saved to fitness log."
+        ENDMETHOD
+
+        METHOD calculateTotalCaloriesBurned()
+            SET totalBurned TO 0.0
+            SET totalSessions TO SIZE OF this.workoutsList
+            
+            REPEAT FROM i = 0 TO totalSessions - 1
+                SET totalBurned TO totalBurned + CALL this.workoutsList[i].calculateCalories()
+            ENDREPEAT
+            
+            RETURN totalBurned
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE MyFitnessLog FROM FitnessLog(1)
+    
+    CREATE Session_1 FROM RunningWorkout("2026-07-09", 45, 8.5, 5.2)
+    CREATE Session_2 FROM WeightTrainingWorkout("2026-07-09", 60, 4, 12)
+
+    CALL MyFitnessLog.logWorkout(Session_1)
+    CALL MyFitnessLog.logWorkout(Session_2)
+
+    DISPLAY "Live Fitness Dashboard Diagnostics"
+    DISPLAY "Running Session Calories: " + CALL Session_1.calculateCalories()
+    DISPLAY "Weight Training Session Calories: " + CALL Session_2.calculateCalories()
+    DISPLAY "Total Cumulative Calories Burned: " + CALL MyFitnessLog.calculateTotalCaloriesBurned()
+
+END
+STOP
