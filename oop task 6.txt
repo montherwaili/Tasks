@@ -1,0 +1,119 @@
+Task 303 
+
+START
+BEGIN
+
+    CLASS Instrument
+        PRIVATE ATTRIBUTES:
+            brand : String
+            price : Double
+
+        CONSTRUCTOR(brnd, prc)
+            SET this.brand TO brnd
+            SET this.price TO prc
+        ENDCONSTRUCTOR
+
+        METHOD getBrand()
+            RETURN this.brand
+        ENDMETHOD
+
+        METHOD getPrice()
+            RETURN this.price
+        ENDMETHOD
+
+        METHOD describePlayStyle()
+            RETURN "Generic Instrument Play Style"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Guitar EXTENDS Instrument
+        PRIVATE ATTRIBUTES:
+            numberOfStrings : Integer
+
+        CONSTRUCTOR(brnd, prc, strings)
+            CALL SUPER_CONSTRUCTOR(brnd, prc)
+            SET this.numberOfStrings TO strings
+        ENDCONSTRUCTOR
+
+        METHOD describePlayStyle()
+            RETURN "strummed or plucked"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS DrumKit EXTENDS Instrument
+        PRIVATE ATTRIBUTES:
+            numberOfPieces : Integer
+
+        CONSTRUCTOR(brnd, prc, pieces)
+            CALL SUPER_CONSTRUCTOR(brnd, prc)
+            SET this.numberOfPieces TO pieces
+        ENDCONSTRUCTOR
+
+        METHOD describePlayStyle()
+            RETURN "struck"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Keyboard EXTENDS Instrument
+        PRIVATE ATTRIBUTES:
+            numberOfKeys : Integer
+
+        CONSTRUCTOR(brnd, prc, keys)
+            CALL SUPER_CONSTRUCTOR(brnd, prc)
+            SET this.numberOfKeys TO keys
+        ENDCONSTRUCTOR
+
+        METHOD describePlayStyle()
+            RETURN "pressed"
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS MusicStore
+        PRIVATE ATTRIBUTES:
+            storeID : Integer
+            storeName : String
+            instrumentsStock : List of Instrument
+
+        CONSTRUCTOR(id, name)
+            SET this.storeID TO id
+            SET this.storeName TO name
+            SET this.instrumentsStock TO LIST []
+        ENDCONSTRUCTOR
+
+        METHOD addInstrument(instrumentObj)
+            ADD instrumentObj TO this.instrumentsStock
+            DISPLAY "Instrument successfully added to the store stock inventory."
+        ENDMETHOD
+
+        METHOD calculateTotalStockValue()
+            SET totalValue TO 0.0
+            SET totalInstruments TO SIZE OF this.instrumentsStock
+            
+            REPEAT FROM i = 0 TO totalInstruments - 1
+                SET totalValue TO totalValue + CALL this.instrumentsStock[i].getPrice()
+            ENDREPEAT
+            
+            RETURN totalValue
+        ENDMETHOD
+
+        METHOD getStockCount()
+            RETURN SIZE OF this.instrumentsStock
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE MyMusicStore FROM MusicStore(1, "Oman Harmony Sound")
+
+    CREATE FenderGuitar FROM Guitar("Fender", 450.00, 6)
+    CREATE YamahaKeyboard FROM Keyboard("Yamaha", 720.00, 88)
+
+    CALL MyMusicStore.addInstrument(FenderGuitar)
+    CALL MyMusicStore.addInstrument(YamahaKeyboard)
+
+    DISPLAY "--- Store Live Dashboard Overview ---"
+    DISPLAY "Total Active Instruments in Stock: " + CALL MyMusicStore.getStockCount()
+    DISPLAY "Guitar Play Style Description: " + CALL FenderGuitar.describePlayStyle()
+    DISPLAY "Keyboard Play Style Description: " + CALL YamahaKeyboard.describePlayStyle()
+    DISPLAY "Total Inventory Financial Valuation: OMR " + CALL MyMusicStore.calculateTotalStockValue()
+
+END
+STOP
