@@ -804,8 +804,8 @@ BEGIN
             securityData : String
 
         CONSTRUCTOR(key, data)
-            SET encryptionKey = key
-            SET securityData = data
+            SET this.encryptionKey TO key
+            SET this.securityData TO data
         ENDCONSTRUCTOR
     ENDCLASS
 
@@ -817,19 +817,17 @@ BEGIN
             chipObj : Chip
 
         CONSTRUCTOR(num, expiry, chp)
-            SET cardNumber = num
-            SET expiryDate = expiry
-            SET status = "Active"
-            SET chipObj = chp
+            SET this.cardNumber TO num
+            SET this.expiryDate TO expiry
+            SET this.status TO "Active"
+            SET this.chipObj TO chp
         ENDCONSTRUCTOR
 
         METHOD getStatus()
-            RETURN status
+            RETURN this.status
         ENDMETHOD
 
-        METHOD authorisePurchase(amount)
-            RETURN FALSE
-        ENDMETHOD
+        ABSTRACT METHOD authorisePurchase(amount)
     ENDCLASS
 
     CLASS DebitCard EXTENDS Card
@@ -838,18 +836,18 @@ BEGIN
 
         CONSTRUCTOR(num, expiry, chp, balance)
             CALL SUPER_CONSTRUCTOR(num, expiry, chp)
-            SET availableBalance = balance
+            SET this.availableBalance TO balance
         ENDCONSTRUCTOR
 
         METHOD authorisePurchase(amount)
-            SET currentStatus = CALL getStatus()
+            SET currentStatus TO CALL this.getStatus()
             IF currentStatus Equals "Blocked" THEN
                 DISPLAY "Authorization Refused: Card is blocked!"
                 RETURN FALSE
             ENDIF
 
-            IF availableBalance Greater Than Or Equals amount THEN
-                SET availableBalance = availableBalance - amount
+            IF this.availableBalance Greater Than Or Equals amount THEN
+                SET this.availableBalance TO this.availableBalance - amount
                 DISPLAY "Purchase Authorized Successfully."
                 RETURN TRUE
             ELSE
@@ -866,35 +864,52 @@ BEGIN
 
         CONSTRUCTOR(num, expiry, chp, limit)
             CALL SUPER_CONSTRUCTOR(num, expiry, chp)
-            SET creditLimit = limit
-            SET unpaidPurchasesList = INITIALIZE EMPTY LIST
+            SET this.creditLimit TO limit
+            SET this.unpaidPurchasesList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD addUnpaidPurchase(amount)
-            ADD amount TO unpaidPurchasesList
+            ADD amount TO this.unpaidPurchasesList
         ENDMETHOD
 
         METHOD calculateOutstandingBalance()
-            SET totalOutstanding = 0.0
-            SET totalTransactions = SIZE OF unpaidPurchasesList
+            SET totalOutstanding TO 0.0
+            SET totalTransactions TO SIZE OF this.unpaidPurchasesList
             
             REPEAT FROM i = 0 TO totalTransactions - 1
-                SET totalOutstanding = totalOutstanding + unpaidPurchasesList[i]
+                SET totalOutstanding TO totalOutstanding + this.unpaidPurchasesList[i]
             ENDREPEAT
             
             RETURN totalOutstanding
         ENDMETHOD
 
+        METHOD makePayment(paymentAmount)
+            SET outstanding TO CALL this.calculateOutstandingBalance()
+            IF paymentAmount Greater Than outstanding THEN
+                SET paymentAmount TO outstanding
+            ENDIF
+            
+            SET totalTransactions TO SIZE OF this.unpaidPurchasesList
+            IF totalTransactions Greater Than 0 THEN
+                SET this.unpaidPurchasesList TO LIST []
+                SET newOutstanding TO outstanding - paymentAmount
+                IF newOutstanding Greater Than 0.0 THEN
+                    ADD newOutstanding TO this.unpaidPurchasesList
+                ENDIF
+            ENDIF
+            DISPLAY "Payment received. Outstanding credit balance updated."
+        ENDMETHOD
+
         METHOD authorisePurchase(amount)
-            SET currentStatus = CALL getStatus()
+            SET currentStatus TO CALL this.getStatus()
             IF currentStatus Equals "Blocked" THEN
                 DISPLAY "Authorization Refused: Card is blocked!"
                 RETURN FALSE
             ENDIF
 
-            SET outstanding = CALL calculateOutstandingBalance()
-            IF outstanding + amount Less Than Or Equals creditLimit THEN
-                CALL addUnpaidPurchase(amount)
+            SET outstanding TO CALL this.calculateOutstandingBalance()
+            IF outstanding + amount Less Than Or Equals this.creditLimit THEN
+                CALL this.addUnpaidPurchase(amount)
                 DISPLAY "Credit Purchase Authorized Successfully."
                 RETURN TRUE
             ELSE
@@ -908,13 +923,13 @@ BEGIN
     CREATE MyVisaCard FROM CreditCard("4000123456789012", "2030-12", BankChip, 2000.00)
 
     CALL MyVisaCard.authorisePurchase(500.00)
-    CALL MyVisaCard.authorisePurchase(1600.00)
+    CALL MyVisaCard.makePayment(200.00)
 
-    DISPLAY "Bank Authorization Hub Terminal"
-    DISPLAY "Current Account Outstanding Balance: OMR " + CALL MyVisaCard.calculateOutstandingBalance()
+    DISPLAY "Credit Card Verified Remaining Outstanding: OMR " + CALL MyVisaCard.calculateOutstandingBalance()
 
 END
 STOP
+
 
 
 
