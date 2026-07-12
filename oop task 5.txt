@@ -944,17 +944,15 @@ BEGIN
             employeeID : Integer
 
         CONSTRUCTOR(sName, id)
-            SET name = sName
-            SET employeeID = id
+            SET this.name TO sName
+            SET this.employeeID TO id
         ENDCONSTRUCTOR
 
         METHOD getName()
-            RETURN name
+            RETURN this.name
         ENDMETHOD
 
-        METHOD performRoleDuty()
-            RETURN "Executing generic clinical staff attendance duty."
-        ENDMETHOD
+        ABSTRACT METHOD performRoleDuty()
     ENDCLASS
 
     CLASS Doctor EXTENDS StaffMember
@@ -963,7 +961,7 @@ BEGIN
 
         CONSTRUCTOR(sName, id, licence)
             CALL SUPER_CONSTRUCTOR(sName, id)
-            SET medicalLicenceNumber = licence
+            SET this.medicalLicenceNumber TO licence
         ENDCONSTRUCTOR
 
         METHOD performRoleDuty()
@@ -977,7 +975,7 @@ BEGIN
 
         CONSTRUCTOR(sName, id, licence, theaterNum)
             CALL SUPER_CONSTRUCTOR(sName, id, licence)
-            SET specialtySurgicalRoom = theaterNum
+            SET this.specialtySurgicalRoom TO theaterNum
         ENDCONSTRUCTOR
 
         METHOD performRoleDuty()
@@ -991,7 +989,7 @@ BEGIN
 
         CONSTRUCTOR(sName, id, type)
             CALL SUPER_CONSTRUCTOR(sName, id)
-            SET nursingLicenseType = type
+            SET this.nursingLicenseType TO type
         ENDCONSTRUCTOR
 
         METHOD performRoleDuty()
@@ -1006,13 +1004,21 @@ BEGIN
             assignedStaff : StaffMember
 
         CONSTRUCTOR(start, end, staffObj)
-            SET startTime = start
-            SET endTime = end
-            SET assignedStaff = staffObj
+            SET this.startTime TO start
+            SET this.endTime TO end
+            SET this.assignedStaff TO staffObj
         ENDCONSTRUCTOR
 
+        METHOD getStartTime()
+            RETURN this.startTime
+        ENDMETHOD
+
+        METHOD getEndTime()
+            RETURN this.endTime
+        ENDMETHOD
+
         METHOD getAssignedStaff()
-            RETURN assignedStaff
+            RETURN this.assignedStaff
         ENDMETHOD
     ENDCLASS
 
@@ -1022,35 +1028,52 @@ BEGIN
             shiftsList : List of Shift
 
         CONSTRUCTOR(name)
-            SET wardName = name
-            SET shiftsList = INITIALIZE EMPTY LIST
+            SET this.wardName TO name
+            SET this.shiftsList TO LIST []
         ENDCONSTRUCTOR
 
-        METHOD scheduleShift(shiftObj)
-            ADD shiftObj TO shiftsList
-            DISPLAY "Shift successfully added to the ward master schedule."
+        METHOD hasShiftConflict(newShift)
+            SET totalShifts TO SIZE OF this.shiftsList
+            SET newStart TO CALL newShift.getStartTime()
+            SET newEnd TO CALL newShift.getEndTime()
+            SET newStaffName TO CALL CALL newShift.getAssignedStaff().getName()
+
+            REPEAT FROM i = 0 TO totalShifts - 1
+                SET existingShift TO this.shiftsList[i]
+                SET existingStaffName TO CALL CALL existingShift.getAssignedStaff().getName()
+                
+                IF existingStaffName Equals newStaffName THEN
+                    SET extStart TO CALL existingShift.getStartTime()
+                    SET extEnd TO CALL existingShift.getEndTime()
+                    
+                    IF newStart Less Than extEnd AND newEnd Greater Than extStart THEN
+                        RETURN TRUE
+                    ENDIF
+                ENDIF
+            ENDREPEAT
+            RETURN FALSE
         ENDMETHOD
 
-        METHOD getShiftsCount()
-            RETURN SIZE OF shiftsList
+        METHOD scheduleShift(shiftObj)
+            IF CALL this.hasShiftConflict(shiftObj) Equals TRUE THEN
+                DISPLAY "Scheduling Refused: Staff member has a shift overlap conflict!"
+                RETURN FALSE
+            ENDIF
+            
+            ADD shiftObj TO this.shiftsList
+            DISPLAY "Shift successfully added to the ward master schedule."
+            RETURN TRUE
         ENDMETHOD
     ENDCLASS
 
     CREATE EmergencyWard FROM Ward("ICU - Emergency Ward")
-    
-    CREATE Staff_Nurse FROM Nurse("Mona Al-Riyami", 301, "Registered Nurse")
-    CREATE Staff_Surgeon FROM Surgeon("Dr. Monther Al-Waili", 7015, "M-LIC-994", "Operating Theater 4")
+    CREATE Staff_Surgeon FROM Surgeon("Dr. Monther Al-Waili", 7015, "M-LIC-994", "Theater 4")
 
-    CREATE Shift_1 FROM Shift(700, 1500, Staff_Nurse)
-    CREATE Shift_2 FROM Shift(1500, 2300, Staff_Surgeon)
+    CREATE Shift_1 FROM Shift(800, 1600, Staff_Surgeon)
+    CREATE Shift_2 FROM Shift(1200, 2000, Staff_Surgeon)
 
     CALL EmergencyWard.scheduleShift(Shift_1)
     CALL EmergencyWard.scheduleShift(Shift_2)
-
-    DISPLAY "Hospital Ward Scheduling Blueprint"
-    DISPLAY "Total active ward shifts logged: " + CALL EmergencyWard.getShiftsCount()
-    DISPLAY "Shift 1 Duty: " + CALL CALL Shift_1.getAssignedStaff().performRoleDuty()
-    DISPLAY "Shift 2 Duty (Surgeon): " + CALL CALL Shift_2.getAssignedStaff().performRoleDuty()
 
 END
 STOP
