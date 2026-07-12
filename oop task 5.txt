@@ -377,41 +377,41 @@ BEGIN
             status : String
 
         CONSTRUCTOR(amt)
-            SET amount = amt
-            SET status = "Pending"
+            SET this.amount TO amt
+            SET this.status TO "Pending"
         ENDCONSTRUCTOR
 
         METHOD getAmount()
-            RETURN amount
+            RETURN this.amount
         ENDMETHOD
 
         METHOD getStatus()
-            RETURN status
+            RETURN this.status
         ENDMETHOD
 
         METHOD setStatus(newStatus)
-            SET status = newStatus
+            SET this.status TO newStatus
         ENDMETHOD
 
-        METHOD processPayment()
-            RETURN FALSE
-        ENDMETHOD
+        ABSTRACT METHOD processPayment()
     ENDCLASS
 
     CLASS CreditCardPayment EXTENDS PaymentMethod
         PRIVATE ATTRIBUTES:
             cardNumber : String
-            expiryDate : String
+            expiryDate : String // Formatted as "MM/YY" e.g., "12/30"
 
         CONSTRUCTOR(amt, card, expiry)
             CALL SUPER_CONSTRUCTOR(amt)
-            SET cardNumber = card
-            SET expiryDate = expiry
+            SET this.cardNumber TO card
+            SET this.expiryDate TO expiry
         ENDCONSTRUCTOR
 
         METHOD processPayment()
-            SET length = CALL cardNumber.length()
-            IF length Equals 16 THEN
+            SET cardLength TO SIZE OF this.cardNumber
+            SET expiryLength TO SIZE OF this.expiryDate
+            
+            IF cardLength Equals 16 AND expiryLength Equals 5 THEN
                 CALL setStatus("Completed")
                 RETURN TRUE
             ELSE
@@ -428,13 +428,21 @@ BEGIN
 
         CONSTRUCTOR(amt, acc, code)
             CALL SUPER_CONSTRUCTOR(amt)
-            SET accountNumber = acc
-            SET bankCode = code
+            SET this.accountNumber TO acc
+            SET this.bankCode TO code
         ENDCONSTRUCTOR
 
         METHOD processPayment()
-            CALL setStatus("Completed")
-            RETURN TRUE
+            SET accLength TO SIZE OF this.accountNumber
+            SET codeLength TO SIZE OF this.bankCode
+            
+            IF accLength Greater Than 8 AND codeLength Equals 4 THEN
+                CALL setStatus("Completed")
+                RETURN TRUE
+            ELSE
+                CALL setStatus("Failed")
+                RETURN FALSE
+            ENDIF
         ENDMETHOD
     ENDCLASS
 
@@ -445,12 +453,12 @@ BEGIN
 
         CONSTRUCTOR(amt, wallet, balance)
             CALL SUPER_CONSTRUCTOR(amt)
-            SET walletID = wallet
-            SET availableBalance = balance
+            SET this.walletID TO wallet
+            SET this.availableBalance TO balance
         ENDCONSTRUCTOR
 
         METHOD processPayment()
-            SET neededAmount = CALL getAmount()
+            SET neededAmount TO CALL getAmount()
             IF availableBalance Greater Than Or Equals neededAmount THEN
                 CALL setStatus("Completed")
                 RETURN TRUE
@@ -467,12 +475,12 @@ BEGIN
             itemPrice : Double
 
         CONSTRUCTOR(name, price)
-            SET itemName = name
-            SET itemPrice = price
+            SET this.itemName TO name
+            SET this.itemPrice TO price
         ENDCONSTRUCTOR
 
         METHOD getItemPrice()
-            RETURN itemPrice
+            RETURN this.itemPrice
         ENDMETHOD
     ENDCLASS
 
@@ -483,32 +491,32 @@ BEGIN
             paymentObj : PaymentMethod
 
         CONSTRUCTOR(id)
-            SET orderID = id
-            SET itemsList = INITIALIZE EMPTY LIST
-            SET paymentObj = NULL
+            SET this.orderID TO id
+            SET this.itemsList TO LIST []
+            SET this.paymentObj TO NULL
         ENDCONSTRUCTOR
 
         METHOD addItem(itemObj)
-            ADD itemObj TO itemsList
+            ADD itemObj TO this.itemsList
         ENDMETHOD
 
         METHOD calculateTotal()
-            SET totalSum = 0.0
-            SET totalItems = SIZE OF itemsList
+            SET totalSum TO 0.0
+            SET totalItems TO SIZE OF this.itemsList
             
             REPEAT FROM i = 0 TO totalItems - 1
-                SET totalSum = totalSum + CALL itemsList[i].getItemPrice()
+                SET totalSum TO totalSum + CALL this.itemsList[i].getItemPrice()
             ENDREPEAT
             
             RETURN totalSum
         ENDMETHOD
 
         METHOD setPayment(payMethodObj)
-            SET paymentObj = payMethodObj
+            SET this.paymentObj TO payMethodObj
         ENDMETHOD
 
         METHOD checkout()
-            SET success = CALL paymentObj.processPayment()
+            SET success TO CALL this.paymentObj.processPayment()
             IF success Equals TRUE THEN
                 DISPLAY "Purchase Completed Successfully!"
             ELSE
@@ -524,13 +532,13 @@ BEGIN
     CALL StoreOrder.addItem(Item_1)
     CALL StoreOrder.addItem(Item_2)
 
-    SET billTotal = CALL StoreOrder.calculateTotal()
-    CREATE MyWalletPay FROM WalletPayment(billTotal, "W-7015", 100.00)
+    SET billTotal TO CALL StoreOrder.calculateTotal()
+    CREATE MyCreditCardPay FROM CreditCardPayment(billTotal, "4000123456789012", "12/30")
     
-    CALL StoreOrder.setPayment(MyWalletPay)
+    CALL StoreOrder.setPayment(MyCreditCardPay)
     CALL StoreOrder.checkout()
 
-    DISPLAY "Order Settlement Status: " + CALL MyWalletPay.getStatus()
+    DISPLAY "Order Settlement Status: " + CALL MyCreditCardPay.getStatus()
 
 END
 STOP
