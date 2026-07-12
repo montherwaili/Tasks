@@ -277,9 +277,7 @@ BEGIN
             RETURN this.characterInventory
         ENDMETHOD
 
-        METHOD attack()
-            RETURN "Generic Character Attack"
-        ENDMETHOD
+        ABSTRACT METHOD attack()
     ENDCLASS
 
     CLASS Warrior EXTENDS Character
@@ -294,6 +292,9 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD attack()
+            IF armorRating Greater Than 0 THEN
+                SET this.armorRating TO this.armorRating - 1
+            ENDIF
             RETURN "Slashes powerfully with broadsword dealing physical damage."
         ENDMETHOD
     ENDCLASS
@@ -310,8 +311,8 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD attack()
-            IF manaPool Greater Than 10 THEN
-                SET this.manaPool TO manaPool - 10
+            IF this.manaPool Greater Than 10 THEN
+                SET this.manaPool TO this.manaPool - 10
                 RETURN "Casts fireball explosion spell utilizing chrono-magic."
             ELSE
                 RETURN "Insufficient mana! Cast failed."
@@ -329,8 +330,8 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD attack()
-            IF arrowSupply Greater Than 0 THEN
-                SET this.arrowSupply TO arrowSupply - 1
+            IF this.arrowSupply Greater Than 0 THEN
+                SET this.arrowSupply TO this.arrowSupply - 1
                 RETURN "Fires piercing diamond arrow from longbow."
             ELSE
                 RETURN "Out of ammunition! longbow cannot fire."
@@ -338,13 +339,7 @@ BEGIN
         ENDMETHOD
     ENDCLASS
 
-    CREATE MyHero FROM Mage("Khaled The Sorcerer", 100, 50.0, 50, 85)
-    SET heroInv TO CALL MyHero.getInventory()
-    CALL heroInv.addItem("Ancient Mana Potion")
-
-    DISPLAY "Video Game Engine Initialization Overview"
-    DISPLAY "Active Character Name: " + CALL MyHero.getName()
-    DISPLAY "Inventory Total Carrying Items: " + CALL heroInv.getItemsCount()
+    CREATE MyHero FROM Mage("Khaled", 100, 50.0, 50, 85)
     DISPLAY "Triggering Character Attack Behavior: " + CALL MyHero.attack()
 
 END
