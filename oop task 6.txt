@@ -21,9 +21,7 @@ BEGIN
             RETURN this.price
         ENDMETHOD
 
-        METHOD describePlayStyle()
-            RETURN "Generic Instrument Play Style"
-        ENDMETHOD
+        ABSTRACT METHOD describePlayStyle()
     ENDCLASS
 
     CLASS Guitar EXTENDS Instrument
@@ -102,21 +100,18 @@ BEGIN
     ENDCLASS
 
     CREATE MyMusicStore FROM MusicStore(1, "Oman Harmony Sound")
-
     CREATE FenderGuitar FROM Guitar("Fender", 450.00, 6)
     CREATE YamahaKeyboard FROM Keyboard("Yamaha", 720.00, 88)
 
     CALL MyMusicStore.addInstrument(FenderGuitar)
     CALL MyMusicStore.addInstrument(YamahaKeyboard)
 
-    DISPLAY "--- Store Live Dashboard Overview ---"
     DISPLAY "Total Active Instruments in Stock: " + CALL MyMusicStore.getStockCount()
-    DISPLAY "Guitar Play Style Description: " + CALL FenderGuitar.describePlayStyle()
-    DISPLAY "Keyboard Play Style Description: " + CALL YamahaKeyboard.describePlayStyle()
     DISPLAY "Total Inventory Financial Valuation: OMR " + CALL MyMusicStore.calculateTotalStockValue()
 
 END
 STOP
+
 
 
 
