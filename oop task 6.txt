@@ -135,9 +135,11 @@ BEGIN
             SET this.durationMinutes TO duration
         ENDCONSTRUCTOR
 
-        METHOD calculateCalories()
-            RETURN 0.0
+        METHOD getDurationMinutes()
+            RETURN this.durationMinutes
         ENDMETHOD
+
+        ABSTRACT METHOD calculateCalories()
     ENDCLASS
 
     CLASS RunningWorkout EXTENDS Workout
@@ -152,7 +154,8 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD calculateCalories()
-            RETURN distanceKM * 65.0
+            SET duration TO CALL this.getDurationMinutes()
+            RETURN (distanceKM * 60.0) + (duration * 0.5)
         ENDMETHOD
     ENDCLASS
 
@@ -168,7 +171,8 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD calculateCalories()
-            RETURN distanceKM * (40.0 + resistanceLevel)
+            SET duration TO CALL this.getDurationMinutes()
+            RETURN (distanceKM * (35.0 + resistanceLevel)) + (duration * 0.4)
         ENDMETHOD
     ENDCLASS
 
@@ -184,7 +188,8 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD calculateCalories()
-            RETURN totalSets * repsPerSet * 0.4
+            SET duration TO CALL this.getDurationMinutes()
+            RETURN (totalSets * repsPerSet * 0.4) + (duration * 3.0)
         ENDMETHOD
     ENDCLASS
 
@@ -216,16 +221,9 @@ BEGIN
     ENDCLASS
 
     CREATE MyFitnessLog FROM FitnessLog(1)
-    
-    CREATE Session_1 FROM RunningWorkout("2026-07-09", 45, 8.5, 5.2)
-    CREATE Session_2 FROM WeightTrainingWorkout("2026-07-09", 60, 4, 12)
+    CREATE Session_1 FROM RunningWorkout("2026-07-12", 45, 8.5, 5.2)
 
     CALL MyFitnessLog.logWorkout(Session_1)
-    CALL MyFitnessLog.logWorkout(Session_2)
-
-    DISPLAY "Live Fitness Dashboard Diagnostics"
-    DISPLAY "Running Session Calories: " + CALL Session_1.calculateCalories()
-    DISPLAY "Weight Training Session Calories: " + CALL Session_2.calculateCalories()
     DISPLAY "Total Cumulative Calories Burned: " + CALL MyFitnessLog.calculateTotalCaloriesBurned()
 
 END
