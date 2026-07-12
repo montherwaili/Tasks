@@ -687,8 +687,8 @@ BEGIN
             fuelEfficiency : Double
 
         CONSTRUCTOR(hp, eff)
-            SET horsepower = hp
-            SET fuelEfficiency = eff
+            SET this.horsepower TO hp
+            SET this.fuelEfficiency TO eff
         ENDCONSTRUCTOR
     ENDCLASS
 
@@ -698,8 +698,8 @@ BEGIN
             packageName : String
 
         CONSTRUCTOR(addr, pkg)
-            SET address = addr
-            SET packageName = pkg
+            SET this.address TO addr
+            SET this.packageName TO pkg
         ENDCONSTRUCTOR
     ENDCLASS
 
@@ -710,14 +710,12 @@ BEGIN
             engineObj : Engine
 
         CONSTRUCTOR(plate, fuel, eng)
-            SET licencePlate = plate
-            SET fuelLevel = fuel
-            SET engineObj = eng
+            SET this.licencePlate TO plate
+            SET this.fuelLevel TO fuel
+            SET this.engineObj TO eng
         ENDCONSTRUCTOR
 
-        METHOD calculateDeliveryTime(distance)
-            RETURN distance / 40.0
-        ENDMETHOD
+        ABSTRACT METHOD calculateDeliveryTime(distance)
     ENDCLASS
 
     CLASS Van EXTENDS Vehicle
@@ -726,7 +724,7 @@ BEGIN
 
         CONSTRUCTOR(plate, fuel, eng, cap)
             CALL SUPER_CONSTRUCTOR(plate, fuel, eng)
-            SET cargoCapacity = cap
+            SET this.cargoCapacity TO cap
         ENDCONSTRUCTOR
 
         METHOD calculateDeliveryTime(distance)
@@ -740,7 +738,7 @@ BEGIN
 
         CONSTRUCTOR(plate, fuel, eng, box)
             CALL SUPER_CONSTRUCTOR(plate, fuel, eng)
-            SET hasStorageBox = box
+            SET this.hasStorageBox TO box
         ENDCONSTRUCTOR
 
         METHOD calculateDeliveryTime(distance)
@@ -754,7 +752,7 @@ BEGIN
 
         CONSTRUCTOR(plate, fuel, eng, limit)
             CALL SUPER_CONSTRUCTOR(plate, fuel, eng)
-            SET weightLimit = limit
+            SET this.weightLimit TO limit
         ENDCONSTRUCTOR
 
         METHOD calculateDeliveryTime(distance)
@@ -768,35 +766,28 @@ BEGIN
             stopsList : List of Stop
 
         CONSTRUCTOR(id)
-            SET routeID = id
-            SET stopsList = INITIALIZE EMPTY LIST
+            SET this.routeID TO id
+            SET this.stopsList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD addStop(stopObj)
-            ADD stopObj TO stopsList
+            ADD stopObj TO this.stopsList
         ENDMETHOD
 
         METHOD getStopsCount()
-            RETURN SIZE OF stopsList
+            RETURN SIZE OF this.stopsList
         ENDMETHOD
     ENDCLASS
 
     CREATE TruckEngine FROM Engine(450, 8.5)
     CREATE HeavyTruck FROM Truck("OM-9942-A", 120.0, TruckEngine, 15000.0)
     
-    CREATE DeliveryRoute FROM Route(401)
-    CREATE Stop_1 FROM Stop("Mina Al Fahal", "Chemicals")
-    CREATE Stop_2 FROM Stop("Rusayl Industrial", "Equipment")
-
-    CALL DeliveryRoute.addStop(Stop_1)
-    CALL DeliveryRoute.addStop(Stop_2)
-
-    DISPLAY "Logistics Fleet Live Diagnostics"
-    DISPLAY "Total Scheduled Route Stops: " + CALL DeliveryRoute.getStopsCount()
-    DISPLAY "Truck Estimated Delivery Time for 150KM: " + CALL HeavyTruck.calculateDeliveryTime(150.0) + " Hours"
+    DISPLAY "Logistics App Verification"
+    DISPLAY "Truck ETA for 150KM: " + CALL HeavyTruck.calculateDeliveryTime(150.0) + " Hours"
 
 END
 STOP
+
 
 
 
