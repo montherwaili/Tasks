@@ -249,6 +249,8 @@ STOP
 
 
 
+
+
 295
 
 
@@ -262,18 +264,16 @@ BEGIN
             dietType : String
 
         CONSTRUCTOR(aName, aAge, diet)
-            SET name = aName
-            SET age = aAge
-            SET dietType = diet
+            SET this.name TO aName
+            SET this.age TO aAge
+            SET this.dietType TO diet
         ENDCONSTRUCTOR
 
         METHOD getName()
-            RETURN name
+            RETURN this.name
         ENDMETHOD
 
-        METHOD makeSound()
-            RETURN "Generic Animal Sound"
-        ENDMETHOD
+        ABSTRACT METHOD makeSound()
     ENDCLASS
 
     CLASS Bird EXTENDS Animal
@@ -283,8 +283,8 @@ BEGIN
 
         CONSTRUCTOR(aName, aAge, diet, span, fly)
             CALL SUPER_CONSTRUCTOR(aName, aAge, diet)
-            SET wingspan = span
-            SET canFly = fly
+            SET this.wingspan TO span
+            SET this.canFly TO fly
         ENDCONSTRUCTOR
 
         METHOD makeSound()
@@ -299,8 +299,8 @@ BEGIN
 
         CONSTRUCTOR(aName, aAge, diet, gill, speed)
             CALL SUPER_CONSTRUCTOR(aName, aAge, diet)
-            SET gillType = gill
-            SET swimSpeed = speed
+            SET this.gillType TO gill
+            SET this.swimSpeed TO speed
         ENDCONSTRUCTOR
 
         METHOD makeSound()
@@ -315,8 +315,8 @@ BEGIN
 
         CONSTRUCTOR(aName, aAge, diet, fur, birth)
             CALL SUPER_CONSTRUCTOR(aName, aAge, diet)
-            SET furColor = fur
-            SET hasLiveBirth = birth
+            SET this.furColor TO fur
+            SET this.hasLiveBirth TO birth
         ENDCONSTRUCTOR
 
         METHOD makeSound()
@@ -331,18 +331,18 @@ BEGIN
             animalsList : List of Animal
 
         CONSTRUCTOR(id, temp)
-            SET enclosureID = id
-            SET temperatureSetting = temp
-            SET animalsList = INITIALIZE EMPTY LIST
+            SET this.enclosureID TO id
+            SET this.temperatureSetting TO temp
+            SET this.animalsList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD addAnimal(animalObj)
-            ADD animalObj TO animalsList
+            ADD animalObj TO this.animalsList
             DISPLAY "Animal successfully placed inside the enclosure."
         ENDMETHOD
 
         METHOD getAnimalsCount()
-            RETURN SIZE OF animalsList
+            RETURN SIZE OF this.animalsList
         ENDMETHOD
     ENDCLASS
 
@@ -360,6 +360,7 @@ BEGIN
 
 END
 STOP
+
 
 
 
