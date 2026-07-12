@@ -554,25 +554,31 @@ BEGIN
     CLASS Subscription
         PRIVATE ATTRIBUTES:
             startDate : String
+            endDate : String
             monthlyPrice : Double
 
-        CONSTRUCTOR(sDate, price)
-            SET startDate = sDate
-            SET monthlyPrice = price
+        CONSTRUCTOR(sDate, eDate, price)
+            SET this.startDate TO sDate
+            SET this.endDate TO eDate
+            SET this.monthlyPrice TO price
         ENDCONSTRUCTOR
 
-        METHOD getDeviceLimit()
-            RETURN 0
+        METHOD isActive(currentDate)
+            IF currentDate Less Than Or Equals this.endDate THEN
+                RETURN TRUE
+            ELSE
+                RETURN FALSE
+            ENDIF
         ENDMETHOD
 
-        METHOD getStreamingQuality()
-            RETURN "Unknown Quality"
-        ENDMETHOD
+        ABSTRACT METHOD getDeviceLimit()
+
+        ABSTRACT METHOD getStreamingQuality()
     ENDCLASS
 
     CLASS BasicPlan EXTENDS Subscription
-        CONSTRUCTOR(sDate, price)
-            CALL SUPER_CONSTRUCTOR(sDate, price)
+        CONSTRUCTOR(sDate, eDate, price)
+            CALL SUPER_CONSTRUCTOR(sDate, eDate, price)
         ENDCONSTRUCTOR
 
         METHOD getDeviceLimit()
@@ -585,8 +591,8 @@ BEGIN
     ENDCLASS
 
     CLASS StandardPlan EXTENDS Subscription
-        CONSTRUCTOR(sDate, price)
-            CALL SUPER_CONSTRUCTOR(sDate, price)
+        CONSTRUCTOR(sDate, eDate, price)
+            CALL SUPER_CONSTRUCTOR(sDate, eDate, price)
         ENDCONSTRUCTOR
 
         METHOD getDeviceLimit()
@@ -599,8 +605,8 @@ BEGIN
     ENDCLASS
 
     CLASS PremiumPlan EXTENDS Subscription
-        CONSTRUCTOR(sDate, price)
-            CALL SUPER_CONSTRUCTOR(sDate, price)
+        CONSTRUCTOR(sDate, eDate, price)
+            CALL SUPER_CONSTRUCTOR(sDate, eDate, price)
         ENDCONSTRUCTOR
 
         METHOD getDeviceLimit()
@@ -618,12 +624,12 @@ BEGIN
             watchDate : String
 
         CONSTRUCTOR(tlt, wDate)
-            SET title = tlt
-            SET watchDate = wDate
+            SET this.title TO tlt
+            SET this.watchDate TO wDate
         ENDCONSTRUCTOR
 
         METHOD getTitle()
-            RETURN title
+            RETURN this.title
         ENDMETHOD
     ENDCLASS
 
@@ -634,38 +640,33 @@ BEGIN
             watchHistory : List of WatchRecord
 
         CONSTRUCTOR(id, subObj)
-            SET accountID = id
-            SET currentSubscription = subObj
-            SET watchHistory = INITIALIZE EMPTY LIST
+            SET this.accountID TO id
+            SET this.currentSubscription TO subObj
+            SET this.watchHistory TO LIST []
         ENDCONSTRUCTOR
 
         METHOD watchVideo(recordObj)
-            ADD recordObj TO watchHistory
+            ADD recordObj TO this.watchHistory
         ENDMETHOD
 
         METHOD getCurrentSubscription()
-            RETURN currentSubscription
+            RETURN this.currentSubscription
         ENDMETHOD
 
         METHOD getHistorySize()
-            RETURN SIZE OF watchHistory
+            RETURN SIZE OF this.watchHistory
         ENDMETHOD
     ENDCLASS
 
-    CREATE MyPremiumPlan FROM PremiumPlan("2026-07-08", 6.00)
+    CREATE MyPremiumPlan FROM PremiumPlan("2026-01-01", "2026-12-31", 6.00)
     CREATE Account_Monther FROM UserAccount(7015, MyPremiumPlan)
 
-    CREATE Movie_1 FROM WatchRecord("The Chronomancer's Cipher", "2026-07-08")
-    CALL Account_Monther.watchVideo(Movie_1)
-
-    SET mySub = CALL Account_Monther.getCurrentSubscription()
-    DISPLAY "User Subscription Account Blueprint"
-    DISPLAY "Active Plan Quality: " + CALL mySub.getStreamingQuality()
-    DISPLAY "Concurrent Device Limit: " + CALL mySub.getDeviceLimit()
-    DISPLAY "Total Watched Titles: " + CALL Account_Monther.getHistorySize()
+    DISPLAY "Streaming Service Engine Verification"
+    DISPLAY "Is Subscription Active? : " + CALL MyPremiumPlan.isActive("2026-07-12")
 
 END
 STOP
+
 
 
 
