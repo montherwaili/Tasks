@@ -1212,12 +1212,12 @@ BEGIN
             usedSpaceGB : Double
 
         CONSTRUCTOR(maxCap, used)
-            SET maxCapacityGB = maxCap
-            SET usedSpaceGB = used
+            SET this.maxCapacityGB TO maxCap
+            SET this.usedSpaceGB TO used
         ENDCONSTRUCTOR
 
         METHOD hasSpace(neededGB)
-            IF usedSpaceGB + neededGB Greater Than maxCapacityGB THEN
+            IF this.usedSpaceGB + neededGB Greater Than this.maxCapacityGB THEN
                 RETURN FALSE
             ELSE
                 RETURN TRUE
@@ -1225,7 +1225,7 @@ BEGIN
         ENDMETHOD
 
         METHOD consumeSpace(neededGB)
-            SET usedSpaceGB = usedSpaceGB + neededGB
+            SET this.usedSpaceGB TO this.usedSpaceGB + neededGB
         ENDMETHOD
     ENDCLASS
 
@@ -1236,22 +1236,20 @@ BEGIN
             isOn : Boolean
 
         CONSTRUCTOR(dName, location)
-            SET name = dName
-            SET roomLocation = location
-            SET isOn = FALSE
+            SET this.name TO dName
+            SET this.roomLocation TO location
+            SET this.isOn TO FALSE
         ENDCONSTRUCTOR
 
         METHOD turnOn()
-            SET isOn = TRUE
+            SET this.isOn TO TRUE
         ENDMETHOD
 
         METHOD getIsOn()
-            RETURN isOn
+            RETURN this.isOn
         ENDMETHOD
 
-        METHOD getPowerUsage()
-            RETURN 0.0
-        ENDMETHOD
+        ABSTRACT METHOD getPowerUsage()
     ENDCLASS
 
     CLASS SmartLight EXTENDS Device
@@ -1260,14 +1258,14 @@ BEGIN
 
         CONSTRUCTOR(dName, location, brightness)
             CALL SUPER_CONSTRUCTOR(dName, location)
-            SET brightnessLevel = brightness
+            SET this.brightnessLevel TO brightness
         ENDCONSTRUCTOR
 
         METHOD getPowerUsage()
-            IF CALL getIsOn() Equals FALSE THEN
+            IF CALL this.getIsOn() Equals FALSE THEN
                 RETURN 0.0
             ENDIF
-            RETURN brightnessLevel * 0.15
+            RETURN this.brightnessLevel * 0.15
         ENDMETHOD
     ENDCLASS
 
@@ -1278,15 +1276,15 @@ BEGIN
 
         CONSTRUCTOR(dName, location, target, intensity)
             CALL SUPER_CONSTRUCTOR(dName, location)
-            SET targetTemperature = target
-            SET coolingIntensity = intensity
+            SET this.targetTemperature TO target
+            SET this.coolingIntensity TO intensity
         ENDCONSTRUCTOR
 
         METHOD getPowerUsage()
-            IF CALL getIsOn() Equals FALSE THEN
+            IF CALL this.getIsOn() Equals FALSE THEN
                 RETURN 0.0
             ENDIF
-            RETURN coolingIntensity * 12.0
+            RETURN this.coolingIntensity * 12.0
         ENDMETHOD
     ENDCLASS
 
@@ -1297,27 +1295,27 @@ BEGIN
 
         CONSTRUCTOR(dName, location, strg)
             CALL SUPER_CONSTRUCTOR(dName, location)
-            SET isRecording = FALSE
-            SET storageObj = strg
+            SET this.isRecording TO FALSE
+            SET this.storageObj TO strg
         ENDCONSTRUCTOR
 
         METHOD startRecording()
-            IF CALL storageObj.hasSpace(5.0) Equals FALSE THEN
+            IF CALL this.storageObj.hasSpace(5.0) Equals FALSE THEN
                 DISPLAY "Recording Terminated: Storage unit is full!"
-                SET isRecording = FALSE
+                SET this.isRecording TO FALSE
                 RETURN FALSE
             ENDIF
-            SET isRecording = TRUE
-            CALL storageObj.consumeSpace(5.0)
+            SET this.isRecording TO TRUE
+            CALL this.storageObj.consumeSpace(5.0)
             DISPLAY "Camera successfully started recording."
             RETURN TRUE
         ENDMETHOD
 
         METHOD getPowerUsage()
-            IF CALL getIsOn() Equals FALSE THEN
+            IF CALL this.getIsOn() Equals FALSE THEN
                 RETURN 0.0
             ENDIF
-            IF isRecording Equals TRUE THEN
+            IF this.isRecording Equals TRUE THEN
                 RETURN 25.0
             ELSE
                 RETURN 5.0
@@ -1331,47 +1329,35 @@ BEGIN
             devicesList : List of Device
 
         CONSTRUCTOR(name)
-            SET roomName = name
-            SET devicesList = INITIALIZE EMPTY LIST
+            SET this.roomName TO name
+            SET this.devicesList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD installDevice(deviceObj)
-            ADD deviceObj TO devicesList
+            ADD deviceObj TO this.devicesList
         ENDMETHOD
 
         METHOD calculateTotalPowerUsage()
-            SET totalPower = 0.0
-            SET totalDevices = SIZE OF devicesList
+            SET totalPower TO 0.0
+            SET totalDevices TO SIZE OF this.devicesList
             
             REPEAT FROM i = 0 TO totalDevices - 1
-                SET totalPower = totalPower + CALL devicesList[i].getPowerUsage()
+                SET totalPower TO totalPower + CALL this.devicesList[i].getPowerUsage()
             ENDREPEAT
             
             RETURN totalPower
         ENDMETHOD
     ENDCLASS
 
-    CREATE LivingRoom FROM Room("Main Living Room")
+    CREATE LivingRoom FROM Room("Living Room")
+    CREATE Lamp FROM SmartLight("LED Light", "Living Room", 70)
     
-    CREATE Lamp FROM SmartLight("LED Chandelier", "Living Room", 80)
-    CREATE NestThermostat FROM SmartThermostat("Nest V3", "Living Room", 22.0, 4.5)
-    
-    CREATE MemoryCard FROM StorageUnit(32.0, 30.0)
-    CREATE SecurityCam FROM SmartCamera("Front Door Cam", "Living Room", MemoryCard)
-
     CALL LivingRoom.installDevice(Lamp)
-    CALL LivingRoom.installDevice(NestThermostat)
-    CALL LivingRoom.installDevice(SecurityCam)
-
     CALL Lamp.turnOn()
-    CALL NestThermostat.turnOn()
-    CALL SecurityCam.turnOn()
-    
-    CALL SecurityCam.startRecording() // Will consume 5GB but has only 2GB left -> Should fail
 
-    DISPLAY "Smart Home Command Dashboard"
-    DISPLAY "Total Real-time Room Power Consumption: " + CALL LivingRoom.calculateTotalPowerUsage() + " Watts"
+    DISPLAY "Smart Room Dynamic Usage: " + CALL LivingRoom.calculateTotalPowerUsage() + " Watts"
 
 END
 STOP
+
 
