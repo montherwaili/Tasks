@@ -365,7 +365,7 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD calculateConsumption()
-            RETURN endReading - startReading
+            RETURN this.endReading - this.startReading
         ENDMETHOD
     ENDCLASS
 
@@ -385,9 +385,7 @@ BEGIN
             RETURN this.meterReadingObj
         ENDMETHOD
 
-        METHOD calculateAmountOwed()
-            RETURN 0.0
-        ENDMETHOD
+        ABSTRACT METHOD calculateAmountOwed()
     ENDCLASS
 
     CLASS ElectricityBill EXTENDS Bill
@@ -404,12 +402,12 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD calculateAmountOwed()
-            SET reading TO CALL getMeterReading()
+            SET reading TO CALL this.getMeterReading()
             SET consumption TO CALL reading.calculateConsumption()
-            IF isPeakTime Equals TRUE THEN
-                RETURN consumption * peakRate
+            IF this.isPeakTime Equals TRUE THEN
+                RETURN consumption * this.peakRate
             ELSE
-                RETURN consumption * offPeakRate
+                RETURN consumption * this.offPeakRate
             ENDIF
         ENDMETHOD
     ENDCLASS
@@ -426,9 +424,9 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD calculateAmountOwed()
-            SET reading TO CALL getMeterReading()
+            SET reading TO CALL this.getMeterReading()
             SET consumption TO CALL reading.calculateConsumption()
-            RETURN (consumption * flatRatePerLiter) + fixedStandingCharge
+            RETURN (consumption * this.flatRatePerLiter) + this.fixedStandingCharge
         ENDMETHOD
     ENDCLASS
 
@@ -444,10 +442,10 @@ BEGIN
         ENDCONSTRUCTOR
 
         METHOD calculateAmountOwed()
-            SET reading TO CALL getMeterReading()
+            SET reading TO CALL this.getMeterReading()
             SET consumption TO CALL reading.calculateConsumption()
-            SET baselineAmount TO consumption * standardRate
-            IF isWinterSeason Equals TRUE THEN
+            SET baselineAmount TO consumption * this.standardRate
+            IF this.isWinterSeason Equals TRUE THEN
                 RETURN baselineAmount + (baselineAmount * 0.15)
             ELSE
                 RETURN baselineAmount
@@ -483,18 +481,15 @@ BEGIN
     ENDCLASS
 
     CREATE MontherAccount FROM CustomerAccount(7015)
-    
     CREATE CurrentReading FROM MeterReading(12400, 12950)
     CREATE PowerInvoice FROM ElectricityBill("July 2026", "2026-08-01", CurrentReading, 0.024, 0.012, TRUE)
 
     CALL MontherAccount.issueBill(PowerInvoice)
-
-    DISPLAY "Utility Billing Central Dashboard"
-    DISPLAY "Electricity Statement Invoice Amount: OMR " + CALL PowerInvoice.calculateAmountOwed()
     DISPLAY "Total Customer Outstanding Balance Owed: OMR " + CALL MontherAccount.calculateTotalOwedBalance()
 
 END
 STOP
+
 
 
 
