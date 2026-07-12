@@ -1093,8 +1093,8 @@ BEGIN
             dimensions : String
 
         CONSTRUCTOR(path, dims)
-            SET filePath = path
-            SET dimensions = dims
+            SET this.filePath TO path
+            SET this.dimensions TO dims
         ENDCONSTRUCTOR
     ENDCLASS
 
@@ -1106,19 +1106,17 @@ BEGIN
             cover : CoverImage
 
         CONSTRUCTOR(tlt, auth, pages, cvr)
-            SET title = tlt
-            SET author = auth
-            SET totalPageCount = pages
-            SET cover = cvr
+            SET this.title TO tlt
+            SET this.author TO auth
+            SET this.totalPageCount TO pages
+            SET this.cover TO cvr
         ENDCONSTRUCTOR
 
-        METHOD getTitle()
-            RETURN title
+        METHOD getTotalPageCount()
+            RETURN this.totalPageCount
         ENDMETHOD
 
-        METHOD getProgress()
-            RETURN 0.0
-        ENDMETHOD
+        ABSTRACT METHOD getProgress()
     ENDCLASS
 
     CLASS Novel EXTENDS Publication
@@ -1127,15 +1125,15 @@ BEGIN
 
         CONSTRUCTOR(tlt, auth, pages, cvr, current)
             CALL SUPER_CONSTRUCTOR(tlt, auth, pages, cvr)
-            SET currentPageReached = current
+            SET this.currentPageReached TO current
         ENDCONSTRUCTOR
 
         METHOD getProgress()
-            SET total = totalPageCount
+            SET total TO CALL this.getTotalPageCount()
             IF total Equals 0 THEN
                 RETURN 0.0
             ENDIF
-            RETURN (currentPageReached / total) * 100.0
+            RETURN (this.currentPageReached / total) * 100.0
         ENDMETHOD
     ENDCLASS
 
@@ -1146,15 +1144,15 @@ BEGIN
 
         CONSTRUCTOR(tlt, auth, pages, cvr, totalArts, openedArts)
             CALL SUPER_CONSTRUCTOR(tlt, auth, pages, cvr)
-            SET totalArticlesCount = totalArts
-            SET openedArticlesCount = openedArts
+            SET this.totalArticlesCount TO totalArts
+            SET this.openedArticlesCount TO openedArts
         ENDCONSTRUCTOR
 
         METHOD getProgress()
-            IF totalArticlesCount Equals 0 THEN
+            IF this.totalArticlesCount Equals 0 THEN
                 RETURN 0.0
             ENDIF
-            RETURN (openedArticlesCount / totalArticlesCount) * 100.0
+            RETURN (this.openedArticlesCount / this.totalArticlesCount) * 100.0
         ENDMETHOD
     ENDCLASS
 
@@ -1163,17 +1161,17 @@ BEGIN
             totalDurationSeconds : Double
             listenedSeconds : Double
 
-        CONSTRUCTOR(tlt, auth, pages, cvr, totalSecs, listenedSecs)
-            CALL SUPER_CONSTRUCTOR(tlt, auth, pages, cvr)
-            SET totalDurationSeconds = totalSecs
-            SET listenedSeconds = listenedSecs
+        CONSTRUCTOR(tlt, auth, cvr, totalSecs, listenedSecs)
+            CALL SUPER_CONSTRUCTOR(tlt, auth, 0, cvr) // audiobook sets page count to zero
+            SET this.totalDurationSeconds TO totalSecs
+            SET this.listenedSeconds TO listenedSecs
         ENDCONSTRUCTOR
 
         METHOD getProgress()
-            IF totalDurationSeconds Equals 0.0 THEN
+            IF this.totalDurationSeconds Equals 0.0 THEN
                 RETURN 0.0
             ENDIF
-            RETURN (listenedSeconds / totalDurationSeconds) * 100.0
+            RETURN (this.listenedSeconds / this.totalDurationSeconds) * 100.0
         ENDMETHOD
     ENDCLASS
 
@@ -1183,29 +1181,19 @@ BEGIN
             publicationsList : List of Publication
 
         CONSTRUCTOR(id)
-            SET libraryID = id
-            SET publicationsList = INITIALIZE EMPTY LIST
+            SET this.libraryID TO id
+            SET this.publicationsList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD addPublication(pubObj)
-            ADD pubObj TO publicationsList
-        ENDMETHOD
-
-        METHOD getPublicationsCount()
-            RETURN SIZE OF publicationsList
+            ADD pubObj TO this.publicationsList
         ENDMETHOD
     ENDCLASS
 
-    CREATE CustomCover FROM CoverImage("/images/cipher_cover.png", "800x1200")
-    CREATE Novel_Cipher FROM Novel("The Chronomancer's Cipher", "Al-Monther", 350, CustomCover, 175)
-    
-    CREATE ReaderLibrary FROM Library(1)
-    CALL ReaderLibrary.addPublication(Novel_Cipher)
+    CREATE CustomCover FROM CoverImage("/images/cover.png", "800x1200")
+    CREATE HarryPotter FROM Novel("Harry Potter", "J.K. Rowling", 400, CustomCover, 200)
 
-    DISPLAY "E-book Reader Engine Overview"
-    DISPLAY "Total Digital Library Stock: " + CALL ReaderLibrary.getPublicationsCount()
-    DISPLAY "Current Publication Title: " + CALL Novel_Cipher.getTitle()
-    DISPLAY "Calculated Reading Progress Percentage: " + CALL Novel_Cipher.getProgress() + "%"
+    DISPLAY "E-book System Progress Verification: " + CALL HarryPotter.getProgress() + "%"
 
 END
 STOP
