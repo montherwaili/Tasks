@@ -132,6 +132,7 @@ STOP
 294
 
 
+
 START
 BEGIN
 
@@ -142,18 +143,16 @@ BEGIN
             hireDate : String
 
         CONSTRUCTOR(empName, id, hDate)
-            SET name = empName
-            SET employeeID = id
-            SET hireDate = hDate
+            SET this.name TO empName
+            SET this.employeeID TO id
+            SET this.hireDate TO hDate
         ENDCONSTRUCTOR
 
         METHOD getName()
-            RETURN name
+            RETURN this.name
         ENDMETHOD
 
-        METHOD calculatePay()
-            RETURN 0.0
-        ENDMETHOD
+        ABSTRACT METHOD calculatePay()
     ENDCLASS
 
     CLASS SalariedEmployee EXTENDS Employee
@@ -162,11 +161,11 @@ BEGIN
 
         CONSTRUCTOR(empName, id, hDate, salary)
             CALL SUPER_CONSTRUCTOR(empName, id, hDate)
-            SET fixedMonthlySalary = salary
+            SET this.fixedMonthlySalary TO salary
         ENDCONSTRUCTOR
 
         METHOD calculatePay()
-            RETURN fixedMonthlySalary
+            RETURN this.fixedMonthlySalary
         ENDMETHOD
     ENDCLASS
 
@@ -177,12 +176,12 @@ BEGIN
 
         CONSTRUCTOR(empName, id, hDate, hours, rate)
             CALL SUPER_CONSTRUCTOR(empName, id, hDate)
-            SET hoursWorked = hours
-            SET hourlyRate = rate
+            SET this.hoursWorked TO hours
+            SET this.hourlyRate TO rate
         ENDCONSTRUCTOR
 
         METHOD calculatePay()
-            RETURN hoursWorked * hourlyRate
+            RETURN this.hoursWorked * this.hourlyRate
         ENDMETHOD
     ENDCLASS
 
@@ -194,13 +193,13 @@ BEGIN
 
         CONSTRUCTOR(empName, id, hDate, bPay, sales, cRate)
             CALL SUPER_CONSTRUCTOR(empName, id, hDate)
-            SET basePay = bPay
-            SET salesAmount = sales
-            SET commissionRate = cRate
+            SET this.basePay TO bPay
+            SET this.salesAmount TO sales
+            SET this.commissionRate TO cRate
         ENDCONSTRUCTOR
 
         METHOD calculatePay()
-            RETURN basePay + (salesAmount * commissionRate)
+            RETURN this.basePay + (this.salesAmount * this.commissionRate)
         ENDMETHOD
     ENDCLASS
 
@@ -210,21 +209,21 @@ BEGIN
             employeesList : List of Employee
 
         CONSTRUCTOR(id)
-            SET payrollID = id
-            SET employeesList = INITIALIZE EMPTY LIST
+            SET this.payrollID TO id
+            SET this.employeesList TO LIST []
         ENDCONSTRUCTOR
 
         METHOD addEmployee(empObj)
-            ADD empObj TO employeesList
+            ADD empObj TO this.employeesList
             DISPLAY "Employee successfully added to payroll system."
         ENDMETHOD
 
         METHOD calculateTotalPayout()
-            SET totalPayout = 0.0
-            SET totalEmployees = SIZE OF employeesList
+            SET totalPayout TO 0.0
+            SET totalEmployees TO SIZE OF this.employeesList
             
             REPEAT FROM i = 0 TO totalEmployees - 1
-                SET totalPayout = totalPayout + CALL employeesList[i].calculatePay()
+                SET totalPayout TO totalPayout + CALL this.employeesList[i].calculatePay()
             ENDREPEAT
             
             RETURN totalPayout
@@ -247,8 +246,6 @@ BEGIN
 
 END
 STOP
-
-
 
 
 
