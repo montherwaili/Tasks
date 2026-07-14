@@ -1,0 +1,163 @@
+308
+
+START
+BEGIN
+
+    CLASS DocumentationFolder
+        PRIVATE ATTRIBUTES:
+            folderID : Integer
+            documentsList : List of String
+
+        CONSTRUCTOR(id)
+            SET this.folderID TO id
+            SET this.documentsList TO LIST []
+        ENDCONSTRUCTOR
+
+        METHOD addDocument(documentName)
+            ADD documentName TO this.documentsList
+        ENDMETHOD
+
+        METHOD getDocumentsCount()
+            RETURN SIZE OF this.documentsList
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Claim
+        PRIVATE ATTRIBUTES:
+            claimNumber : String
+            dateFiled : String
+            statusStage : Integer 
+            docsFolder : DocumentationFolder
+
+        CONSTRUCTOR(num, cDate, folderObj)
+            SET this.claimNumber TO num
+            SET this.dateFiled TO cDate
+            SET this.statusStage TO 1
+            SET this.docsFolder TO folderObj
+        ENDCONSTRUCTOR
+
+        METHOD getStatusStage()
+            RETURN this.statusStage
+        ENDMETHOD
+
+        METHOD advanceStatus(nextStage)
+            IF nextStage Equals this.statusStage + 1 THEN
+                SET this.statusStage TO nextStage
+                RETURN TRUE
+            ELSE
+                DISPLAY "Transaction Denied: Invalid status sequence progression!"
+                RETURN FALSE
+            ENDIF
+        ENDMETHOD
+
+        ABSTRACT METHOD calculatePayout()
+    ENDCLASS
+
+    CLASS VehicleClaim EXTENDS Claim
+        PRIVATE ATTRIBUTES:
+            repairEstimate : Double
+            fixedExcess : Double
+
+        CONSTRUCTOR(num, cDate, folderObj, estimate, excess)
+            CALL SUPER_CONSTRUCTOR(num, cDate, folderObj)
+            SET this.repairEstimate TO estimate
+            SET this.fixedExcess TO excess
+        ENDCONSTRUCTOR
+
+        METHOD calculatePayout()
+            IF this.repairEstimate Less Than Or Equals this.fixedExcess THEN
+                RETURN 0.0
+            ENDIF
+            RETURN this.repairEstimate - this.fixedExcess
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS MedicalClaim EXTENDS Claim
+        PRIVATE ATTRIBUTES:
+            treatmentCosts : Double
+            medicalCoverageLimit : Double
+
+        CONSTRUCTOR(num, cDate, folderObj, costs, limit)
+            CALL SUPER_CONSTRUCTOR(num, cDate, folderObj)
+            SET this.treatmentCosts TO costs
+            SET this.medicalCoverageLimit TO limit
+        ENDCONSTRUCTOR
+
+        METHOD calculatePayout()
+            IF this.treatmentCosts Greater Than this.medicalCoverageLimit THEN
+                RETURN this.medicalCoverageLimit
+            ELSE
+                RETURN this.treatmentCosts
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS PropertyClaim EXTENDS Claim
+        PRIVATE ATTRIBUTES:
+            estimatedDamageValue : Double
+            isProperlyMaintained : Boolean
+
+        CONSTRUCTOR(num, cDate, folderObj, damage, maintenanceFlag)
+            CALL SUPER_CONSTRUCTOR(num, cDate, folderObj)
+            SET this.estimatedDamageValue TO damage
+            SET this.isProperlyMaintained TO maintenanceFlag
+        ENDCONSTRUCTOR
+
+        METHOD calculatePayout()
+            IF this.isProperlyMaintained Equals TRUE THEN
+                RETURN this.estimatedDamageValue
+            ELSE
+                RETURN this.estimatedDamageValue - (this.estimatedDamageValue * 0.20)
+            ENDIF
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS Policy
+        PRIVATE ATTRIBUTES:
+            policyNumber : String
+            claimsHistory : List of Claim
+
+        CONSTRUCTOR(num)
+            SET this.policyNumber TO num
+            SET this.claimsHistory TO LIST []
+        ENDCONSTRUCTOR
+
+        METHOD fileClaim(claimObj)
+            ADD claimObj TO this.claimsHistory
+            DISPLAY "Insurance claim successfully registered under policy."
+        ENDMETHOD
+
+        METHOD calculateTotalPolicyPayout()
+            SET totalPaid TO 0.0
+            SET totalClaims TO SIZE OF this.claimsHistory
+            
+            REPEAT FROM i = 0 TO totalClaims - 1
+                IF CALL this.claimsHistory[i].getStatusStage() Greater Than Or Equals 3 THEN
+                    SET totalPaid TO totalPaid + CALL this.claimsHistory[i].calculatePayout()
+                ENDIF
+            ENDREPEAT
+            
+            RETURN totalPaid
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE ClientFolder FROM DocumentationFolder(551)
+    CALL ClientFolder.addDocument("Car_Accident_Photo.jpg")
+    CALL ClientFolder.addDocument("Garage_Repair_Invoice.pdf")
+
+    CREATE MontherPolicy FROM Policy("POL-9942")
+    CREATE AccidentClaim FROM VehicleClaim("CLM-101", "2026-07-14", ClientFolder, 1500.00, 200.00)
+
+    CALL MontherPolicy.fileClaim(AccidentClaim)
+    CALL AccidentClaim.advanceStatus(2)
+    CALL AccidentClaim.advanceStatus(3)
+
+    DISPLAY "Corporate Claims Processing Dashboard"
+    DISPLAY "Verified Dynamic Claim Payout: OMR " + CALL AccidentClaim.calculatePayout()
+    DISPLAY "Total Active Policy Disbursed Capital: OMR " + CALL MontherPolicy.calculateTotalPolicyPayout()
+
+END
+STOP
+
+
+
