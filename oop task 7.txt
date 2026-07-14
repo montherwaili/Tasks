@@ -161,3 +161,143 @@ STOP
 
 
 
+309
+
+START
+BEGIN
+
+    CLASS ConditionReport
+        PRIVATE ATTRIBUTES:
+            reportID : Integer
+            damageNotes : String
+
+        CONSTRUCTOR(id, notes)
+            SET this.reportID TO id
+            SET this.damageNotes TO notes
+        ENDCONSTRUCTOR
+    ENDCLASS
+
+    CLASS LoanItem
+        PRIVATE ATTRIBUTES:
+            title : String
+            barcode : String
+            loanDurationDays : Integer
+            itemCondition : ConditionReport
+
+        CONSTRUCTOR(tlt, code, duration, reportObj)
+            SET this.title TO tlt
+            SET this.barcode TO code
+            SET this.loanDurationDays TO duration
+            SET this.itemCondition TO reportObj
+        ENDCONSTRUCTOR
+
+        ABSTRACT METHOD calculateLateFee(daysOverdue)
+    ENDCLASS
+
+    CLASS StandardBook EXTENDS LoanItem
+        PRIVATE ATTRIBUTES:
+            flatFeePerDay : Double
+
+        CONSTRUCTOR(tlt, code, duration, reportObj, fee)
+            CALL SUPER_CONSTRUCTOR(tlt, code, duration, reportObj)
+            SET this.flatFeePerDay TO fee
+        ENDCONSTRUCTOR
+
+        METHOD calculateLateFee(daysOverdue)
+            IF daysOverdue Less Than Or Equals 0 THEN
+                RETURN 0.0
+            ENDIF
+            RETURN daysOverdue * this.flatFeePerDay
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS ReferenceTextbook EXTENDS LoanItem
+        PRIVATE ATTRIBUTES:
+            premiumFeePerDay : Double
+
+        CONSTRUCTOR(tlt, code, duration, reportObj, premiumFee)
+            CALL SUPER_CONSTRUCTOR(tlt, code, duration, reportObj)
+            SET this.premiumFeePerDay TO premiumFee
+        ENDCONSTRUCTOR
+
+        METHOD getPremiumFeePerDay()
+            RETURN this.premiumFeePerDay
+        ENDMETHOD
+
+        METHOD calculateLateFee(daysOverdue)
+            IF daysOverdue Less Than Or Equals 0 THEN
+                RETURN 0.0
+            ENDIF
+            RETURN daysOverdue * this.premiumFeePerDay
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS JournalIssue EXTENDS ReferenceTextbook
+        PRIVATE ATTRIBUTES:
+            isRenewable : Boolean
+
+        CONSTRUCTOR(tlt, code, duration, reportObj, premiumFee)
+            CALL SUPER_CONSTRUCTOR(tlt, code, duration, reportObj, premiumFee)
+            SET this.isRenewable TO TRUE
+        ENDCONSTRUCTOR
+
+        METHOD calculateLateFee(daysOverdue)
+            IF daysOverdue Greater Than 0 THEN
+                SET this.isRenewable TO FALSE
+            ENDIF
+            RETURN CALL SUPER_METHOD_calculateLateFee(daysOverdue)
+        ENDMETHOD
+
+        METHOD getIsRenewable()
+            RETURN this.isRenewable
+        ENDMETHOD
+    ENDCLASS
+
+    CLASS StudentAccount
+        PRIVATE ATTRIBUTES:
+            studentID : Integer
+            currentLoansList : List of LoanItem
+
+        CONSTRUCTOR(id)
+            SET this.studentID TO id
+            SET this.currentLoansList TO LIST []
+        ENDCONSTRUCTOR
+
+        METHOD borrowItem(loanItemObj)
+            ADD loanItemObj TO this.currentLoansList
+            DISPLAY "Material successfully checked out and added to student account."
+        ENDMETHOD
+
+        METHOD calculateTotalAccountFines(daysOverdue)
+            SET totalFines TO 0.0
+            SET totalItems TO SIZE OF this.currentLoansList
+            
+            REPEAT FROM i = 0 TO totalItems - 1
+                SET totalFines TO totalFines + CALL this.currentLoansList[i].calculateLateFee(daysOverdue)
+            ENDREPEAT
+            
+            RETURN totalFines
+        ENDMETHOD
+    ENDCLASS
+
+    CREATE InitialReport FROM ConditionReport(1, "Slight wear on spine, pages clean.")
+    CREATE AcademicJournal FROM JournalIssue("International Journal of OOP", "J-9942", 1, InitialReport, 5.00)
+    
+    CREATE MontherAccount FROM StudentAccount(7015)
+    CALL MontherAccount.borrowItem(AcademicJournal)
+
+    SET fineTotal TO CALL AcademicJournal.calculateLateFee(3)
+
+    DISPLAY "University Library Academic Loan Station"
+    DISPLAY "Journal Calculated Fine for 3 Days Late: OMR " + fineTotal
+    DISPLAY "Is Journal Material Renewable Now? : " + CALL AcademicJournal.getIsRenewable()
+    DISPLAY "Total Active Student Outstanding Fines: OMR " + CALL MontherAccount.calculateTotalAccountFines(3)
+
+END
+STOP
+
+
+
+
+
+
