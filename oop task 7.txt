@@ -584,140 +584,140 @@ STOP
 312
 
 
+CLASS HardwareSpecification
+    PRIVATE ATTRIBUTES:
+        cpuCores : Integer
+        ramGB : Integer
+        storageTB : Double
+
+    CONSTRUCTOR(cpu, ram, storage)
+        SET this.cpuCores TO cpu
+        SET this.ramGB TO ram
+        SET this.storageTB TO storage
+    ENDCONSTRUCTOR
+ENDCLASS
+
+CLASS Server
+    PRIVATE ATTRIBUTES:
+        serialNumber : String
+        uptimeSeconds : Integer
+        hardwareSpecs : HardwareSpecification
+
+    CONSTRUCTOR(serial, uptime, specs)
+        SET this.serialNumber TO serial
+        SET this.uptimeSeconds TO uptime
+        SET this.hardwareSpecs TO specs
+    ENDCONSTRUCTOR
+
+    ABSTRACT METHOD calculateLoadPercentage()
+ENDCLASS
+
+CLASS WebServer INHERITS Server
+    PRIVATE ATTRIBUTES:
+        activeConnections : Integer
+        maxConnectionLimit : Integer
+
+    CONSTRUCTOR(serial, uptime, specs, active, maxLimit)
+        CALL SUPER(serial, uptime, specs)
+        SET this.activeConnections TO active
+        SET this.maxConnectionLimit TO maxLimit
+    ENDCONSTRUCTOR
+
+    METHOD calculateLoadPercentage()
+        IF this.maxConnectionLimit Equals 0 THEN
+            RETURN 0.0
+        ENDIF
+        RETURN (this.activeConnections / this.maxConnectionLimit) * 100.0
+    ENDMETHOD
+ENDCLASS
+
+CLASS DatabaseServer INHERITS Server
+    PRIVATE ATTRIBUTES:
+        queryThroughput : Double
+        maxQPSCapacity : Double
+
+    CONSTRUCTOR(serial, uptime, specs, throughput, qps)
+        CALL SUPER(serial, uptime, specs)
+        SET this.queryThroughput TO throughput
+        SET this.maxQPSCapacity TO qps
+    ENDCONSTRUCTOR
+
+    METHOD getQueryThroughput()
+        RETURN this.queryThroughput
+    ENDMETHOD
+
+    METHOD getMaxQPSCapacity()
+        RETURN this.maxQPSCapacity
+    ENDMETHOD
+
+    METHOD calculateLoadPercentage()
+        IF this.maxQPSCapacity Equals 0.0 THEN
+            RETURN 0.0
+        ENDIF
+        SET calculatedLoad TO (this.queryThroughput / this.maxQPSCapacity) * 100.0
+        IF calculatedLoad Greater Than Or Equals 100.0 THEN
+            DISPLAY "Security Warning: Server at full capacity! Connections locked."
+            RETURN 100.0
+        ENDIF
+        RETURN calculatedLoad
+    ENDMETHOD
+ENDCLASS
+
+CLASS CacheServer INHERITS DatabaseServer
+    PRIVATE ATTRIBUTES:
+        cacheHitRatio : Double 
+
+    CONSTRUCTOR(serial, uptime, specs, throughput, qps, hitRatio)
+        CALL SUPER(serial, uptime, specs, throughput, qps)
+        SET this.cacheHitRatio TO hitRatio
+    ENDCONSTRUCTOR
+
+    METHOD calculateLoadPercentage()
+        SET databaseLoad TO CALL SUPER_METHOD_calculateLoadPercentage()
+        IF this.cacheHitRatio Greater Than 0.8 THEN
+            RETURN databaseLoad * 0.5
+        ELSE
+            RETURN databaseLoad
+        ENDIF
+    ENDMETHOD
+ENDCLASS
+
+CLASS Rack
+    PRIVATE ATTRIBUTES:
+        rackID : Integer
+        serversList : LIST<Server>
+
+    CONSTRUCTOR(id)
+        SET this.rackID TO id
+        SET this.serversList TO LIST []
+    ENDCONSTRUCTOR
+
+    METHOD installServer(serverObj)
+        ADD serverObj TO this.serversList
+    ENDMETHOD
+
+    METHOD calculateAverageRackLoad()
+        SET totalLoad TO 0.0
+        SET totalServers TO SIZE OF this.serversList
+        IF totalServers Equals 0 THEN
+            RETURN 0.0
+        ENDIF
+
+        REPEAT FROM i = 0 TO totalServers - 1
+            SET totalLoad TO totalLoad + CALL this.serversList[i].calculateLoadPercentage()
+        ENDFOR
+
+        RETURN totalLoad / totalServers
+    ENDMETHOD
+ENDCLASS
+
 START
 BEGIN
 
-    CLASS HardwareSpecification
-        PRIVATE ATTRIBUTES:
-            cpuCores : Integer
-            ramGB : Integer
-            storageTB : Double
-
-        CONSTRUCTOR(cpu, ram, storage)
-            SET this.cpuCores TO cpu
-            SET this.ramGB TO ram
-            SET this.storageTB TO storage
-        ENDCONSTRUCTOR
-    ENDCLASS
-
-    CLASS Server
-        PRIVATE ATTRIBUTES:
-            serialNumber : String
-            uptimeSeconds : Integer
-            hardwareSpecs : HardwareSpecification
-
-        CONSTRUCTOR(serial, uptime, specs)
-            SET this.serialNumber TO serial
-            SET this.uptimeSeconds TO uptime
-            SET this.hardwareSpecs TO specs
-        ENDCONSTRUCTOR
-
-        ABSTRACT METHOD calculateLoadPercentage()
-    ENDCLASS
-
-    CLASS WebServer EXTENDS Server
-        PRIVATE ATTRIBUTES:
-            activeConnections : Integer
-            maxConnectionLimit : Integer
-
-        CONSTRUCTOR(serial, uptime, specs, active, maxLimit)
-            CALL SUPER_CONSTRUCTOR(serial, uptime, specs)
-            SET this.activeConnections TO active
-            SET this.maxConnectionLimit TO maxLimit
-        ENDCONSTRUCTOR
-
-        METHOD calculateLoadPercentage()
-            IF maxConnectionLimit Equals 0 THEN
-                RETURN 0.0
-            ENDIF
-            RETURN (activeConnections / maxConnectionLimit) * 100.0
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS DatabaseServer EXTENDS Server
-        PRIVATE ATTRIBUTES:
-            queryThroughput : Double
-            maxQPSCapacity : Double
-
-        CONSTRUCTOR(serial, uptime, specs, throughput, qps)
-            CALL SUPER_CONSTRUCTOR(serial, uptime, specs)
-            SET this.queryThroughput TO throughput
-            SET this.maxQPSCapacity TO qps
-        ENDCONSTRUCTOR
-
-        METHOD getQueryThroughput()
-            RETURN this.queryThroughput
-        ENDMETHOD
-
-        METHOD getMaxQPSCapacity()
-            RETURN this.maxQPSCapacity
-        ENDMETHOD
-
-        METHOD calculateLoadPercentage()
-            IF maxQPSCapacity Equals 0.0 THEN
-                RETURN 0.0
-            ENDIF
-            SET calculatedLoad TO (queryThroughput / maxQPSCapacity) * 100.0
-            IF calculatedLoad Greater Than Or Equals 100.0 THEN
-                DISPLAY "Security Warning: Server at full capacity! Connections locked."
-                RETURN 100.0
-            ENDIF
-            RETURN calculatedLoad
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS CacheServer EXTENDS DatabaseServer
-        PRIVATE ATTRIBUTES:
-            cacheHitRatio : Double // Range: 0.0 to 1.0
-
-        CONSTRUCTOR(serial, uptime, specs, throughput, qps, hitRatio)
-            CALL SUPER_CONSTRUCTOR(serial, uptime, specs, throughput, qps)
-            SET this.cacheHitRatio TO hitRatio
-        ENDCONSTRUCTOR
-
-        METHOD calculateLoadPercentage()
-            SET databaseLoad TO CALL SUPER_METHOD_calculateLoadPercentage()
-            IF cacheHitRatio Greater Than 0.8 THEN
-                RETURN databaseLoad * 0.5
-            ELSE
-                RETURN databaseLoad
-            ENDIF
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS Rack
-        PRIVATE ATTRIBUTES:
-            rackID : Integer
-            serversList : List of Server
-
-        CONSTRUCTOR(id)
-            SET this.rackID TO id
-            SET this.serversList TO LIST []
-        ENDCONSTRUCTOR
-
-        METHOD installServer(serverObj)
-            ADD serverObj TO this.serversList
-        ENDMETHOD
-
-        METHOD calculateAverageRackLoad()
-            SET totalLoad TO 0.0
-            SET totalServers TO SIZE OF this.serversList
-            IF totalServers Equals 0 THEN
-                RETURN 0.0
-            ENDIF
-
-            REPEAT FROM i = 0 TO totalServers - 1
-                SET totalLoad TO totalLoad + CALL this.serversList[i].calculateLoadPercentage()
-            ENDREPEAT
-
-            RETURN totalLoad / totalServers
-        ENDMETHOD
-    ENDCLASS
-
-    CREATE ServerSpecs FROM HardwareSpecification(64, 256, 12.0)
-    CREATE MyCacheServer FROM CacheServer("SER-7015", 3600, ServerSpecs, 800.0, 1000.0, 0.9)
+    CREATE OBJECT ServerSpecs OF HardwareSpecification(64, 256, 12.0)
+    CREATE OBJECT MyCacheServer OF CacheServer("SER-7015", 3600, ServerSpecs, 800.0, 1000.0, 0.9)
     
-    CREATE DataRack FROM Rack(1)
+    CREATE OBJECT DataRack OF Rack(1)
     CALL DataRack.installServer(MyCacheServer)
 
     DISPLAY "Data Center Infrastructure Monitoring Station"
@@ -726,3 +726,4 @@ BEGIN
 
 END
 STOP
+
