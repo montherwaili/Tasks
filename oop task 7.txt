@@ -432,130 +432,143 @@ STOP
 311
 
 
+CLASS PaymentTerms
+    PRIVATE ATTRIBUTES:
+        dueDate : String
+        latePaymentInterestRate : Double
+
+    CONSTRUCTOR(due, interest)
+        SET this.dueDate TO due
+        SET this.latePaymentInterestRate TO interest
+    ENDCONSTRUCTOR
+
+    METHOD getLatePaymentInterestRate()
+        RETURN this.latePaymentInterestRate
+    ENDMETHOD
+ENDCLASS
+
+CLASS Invoice
+    PRIVATE ATTRIBUTES:
+        invoiceNumber : String
+        dateIssued : String
+        clientName : String
+        termsObj : PaymentTerms
+
+    CONSTRUCTOR(num, issued, client, terms)
+        SET this.invoiceNumber TO num
+        SET this.dateIssued TO issued
+        SET this.clientName TO client
+        SET this.termsObj TO terms
+    ENDCONSTRUCTOR
+
+    METHOD getTermsObj()
+        RETURN this.termsObj
+    ENDMETHOD
+
+    ABSTRACT METHOD calculateTotalAmountDue()
+ENDCLASS
+
+CLASS HourlyInvoice INHERITS Invoice
+    PRIVATE ATTRIBUTES:
+        loggedHours : Integer
+        hourlyRate : Double
+        isApprovedByClient : Boolean
+
+    CONSTRUCTOR(num, issued, client, terms, hours, rate, approvedFlag)
+        CALL SUPER(num, issued, client, terms)
+        SET this.loggedHours TO hours
+        SET this.hourlyRate TO rate
+        SET this.isApprovedByClient TO approvedFlag
+    ENDCONSTRUCTOR
+
+    METHOD calculateTotalAmountDue()
+        IF this.isApprovedByClient Equals FALSE THEN
+            RETURN 0.0
+        ENDIF
+        SET baseAmount TO this.loggedHours * this.hourlyRate
+        SET interestRate TO CALL CALL this.getTermsObj().getLatePaymentInterestRate()
+        RETURN baseAmount + (baseAmount * interestRate)
+    ENDMETHOD
+ENDCLASS
+
+CLASS FixedPriceInvoice INHERITS Invoice
+    PRIVATE ATTRIBUTES:
+        agreedProjectFee : Double
+
+    CONSTRUCTOR(num, issued, client, terms, fee)
+        CALL SUPER(num, issued, client, terms)
+        SET this.agreedProjectFee TO fee
+    ENDCONSTRUCTOR
+
+    METHOD getAgreedProjectFee()
+        RETURN this.agreedProjectFee
+    ENDMETHOD
+
+    METHOD calculateTotalAmountDue()
+        SET interestRate TO CALL CALL this.getTermsObj().getLatePaymentInterestRate()
+        RETURN this.agreedProjectFee + (this.agreedProjectFee * interestRate)
+    ENDMETHOD
+ENDCLASS
+
+CLASS RetainerInvoice INHERITS FixedPriceInvoice
+    PRIVATE ATTRIBUTES:
+        includedHourAllowance : Integer
+        actualHoursWorked : Integer
+        extraHourlyRate : Double
+
+    CONSTRUCTOR(num, issued, client, terms, fee, allowance, actual, extraRate)
+        CALL SUPER(num, issued, client, terms, fee)
+        SET this.includedHourAllowance TO allowance
+        SET this.actualHoursWorked TO actual
+        SET this.extraHourlyRate TO extraRate
+    ENDCONSTRUCTOR
+
+    METHOD calculateTotalAmountDue()
+        SET baseFee TO CALL SUPER_METHOD_calculateTotalAmountDue()
+        IF this.actualHoursWorked Less Than Or Equals this.includedHourAllowance THEN
+            RETURN baseFee
+        ELSE
+            SET extraHours TO this.actualHoursWorked - this.includedHourAllowance
+            SET extraCharges TO extraHours * this.extraHourlyRate
+            SET interestRate TO CALL CALL this.getTermsObj().getLatePaymentInterestRate()
+            RETURN baseFee + extraCharges + (extraCharges * interestRate)
+        ENDIF
+    ENDMETHOD
+ENDCLASS
+
+CLASS FreelancerAccount
+    PRIVATE ATTRIBUTES:
+        freelancerName : String
+        invoicesHistory : LIST<Invoice>
+
+    CONSTRUCTOR(name)
+        SET this.freelancerName TO name
+        SET this.invoicesHistory TO LIST []
+    ENDCONSTRUCTOR
+
+    METHOD issueInvoice(invoiceObj)
+        ADD invoiceObj TO this.invoicesHistory
+    ENDMETHOD
+
+    METHOD calculateTotalAccountRevenue()
+        SET totalRevenue TO 0.0
+        SET totalInvoices TO SIZE OF this.invoicesHistory
+        
+        REPEAT FROM i = 0 TO totalInvoices - 1
+            SET totalRevenue TO totalRevenue + CALL this.invoicesHistory[i].calculateTotalAmountDue()
+        ENDREPEAT
+        
+        RETURN totalRevenue
+    ENDMETHOD
+ENDCLASS
+
 START
 BEGIN
 
-    CLASS PaymentTerms
-        PRIVATE ATTRIBUTES:
-            dueDate : String
-            latePaymentInterestRate : Double
-
-        CONSTRUCTOR(due, interest)
-            SET this.dueDate TO due
-            SET this.latePaymentInterestRate TO interest
-        ENDCONSTRUCTOR
-    ENDCLASS
-
-    CLASS Invoice
-        PRIVATE ATTRIBUTES:
-            invoiceNumber : String
-            dateIssued : String
-            clientName : String
-            termsObj : PaymentTerms
-
-        CONSTRUCTOR(num, issued, client, terms)
-            SET this.invoiceNumber TO num
-            SET this.dateIssued TO issued
-            SET this.clientName TO client
-            SET this.termsObj TO terms
-        ENDCONSTRUCTOR
-
-        ABSTRACT METHOD calculateTotalAmountDue()
-    ENDCLASS
-
-    CLASS HourlyInvoice EXTENDS Invoice
-        PRIVATE ATTRIBUTES:
-            loggedHours : Integer
-            hourlyRate : Double
-            isApprovedByClient : Boolean
-
-        CONSTRUCTOR(num, issued, client, terms, hours, rate, approvedFlag)
-            CALL SUPER_CONSTRUCTOR(num, issued, client, terms)
-            SET this.loggedHours TO hours
-            SET this.hourlyRate TO rate
-            SET this.isApprovedByClient TO approvedFlag
-        ENDCONSTRUCTOR
-
-        METHOD calculateTotalAmountDue()
-            IF isApprovedByClient Equals FALSE THEN
-                RETURN 0.0
-            ENDIF
-            RETURN loggedHours * hourlyRate
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS FixedPriceInvoice EXTENDS Invoice
-        PRIVATE ATTRIBUTES:
-            agreedProjectFee : Double
-
-        CONSTRUCTOR(num, issued, client, terms, fee)
-            CALL SUPER_CONSTRUCTOR(num, issued, client, terms)
-            SET this.agreedProjectFee TO fee
-        ENDCONSTRUCTOR
-
-        METHOD getAgreedProjectFee()
-            RETURN this.agreedProjectFee
-        ENDMETHOD
-
-        METHOD calculateTotalAmountDue()
-            RETURN this.agreedProjectFee
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS RetainerInvoice EXTENDS FixedPriceInvoice
-        PRIVATE ATTRIBUTES:
-            includedHourAllowance : Integer
-            actualHoursWorked : Integer
-            extraHourlyRate : Double
-
-        CONSTRUCTOR(num, issued, client, terms, fee, allowance, actual, extraRate)
-            CALL SUPER_CONSTRUCTOR(num, issued, client, terms, fee)
-            SET this.includedHourAllowance TO allowance
-            SET this.actualHoursWorked TO actual
-            SET this.extraHourlyRate TO extraRate
-        ENDCONSTRUCTOR
-
-        METHOD calculateTotalAmountDue()
-            SET baseFee TO CALL SUPER_METHOD_calculateTotalAmountDue()
-            IF actualHoursWorked Less Than Or Equals includedHourAllowance THEN
-                RETURN baseFee
-            ELSE
-                SET extraHours TO actualHoursWorked - includedHourAllowance
-                RETURN baseFee + (extraHours * extraHourlyRate)
-            ENDIF
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS FreelancerAccount
-        PRIVATE ATTRIBUTES:
-            freelancerName : String
-            invoicesHistory : List of Invoice
-
-        CONSTRUCTOR(name)
-            SET this.freelancerName TO name
-            SET this.invoicesHistory TO LIST []
-        ENDCONSTRUCTOR
-
-        METHOD issueInvoice(invoiceObj)
-            ADD invoiceObj TO this.invoicesHistory
-        ENDMETHOD
-
-        METHOD calculateTotalAccountRevenue()
-            SET totalRevenue TO 0.0
-            SET totalInvoices TO SIZE OF this.invoicesHistory
-            
-            REPEAT FROM i = 0 TO totalInvoices - 1
-                SET totalRevenue TO totalRevenue + CALL this.invoicesHistory[i].calculateTotalAmountDue()
-            ENDREPEAT
-            
-            RETURN totalRevenue
-        ENDMETHOD
-    ENDCLASS
-
-    CREATE Terms_1 FROM PaymentTerms("2026-08-14", 0.05)
-    CREATE RetainerInv FROM RetainerInvoice("INV-8802", "2026-07-14", "TechCorp", Terms_1, 500.00, 20, 25, 30.00)
+    CREATE OBJECT Terms_1 OF PaymentTerms("2026-08-14", 0.05)
+    CREATE OBJECT RetainerInv OF RetainerInvoice("INV-8802", "2026-07-14", "TechCorp", Terms_1, 500.00, 20, 25, 30.00)
     
-    CREATE MontherAccount FROM FreelancerAccount("Monther Al-Waili")
+    CREATE OBJECT MontherAccount OF FreelancerAccount("Monther Al-Waili")
     CALL MontherAccount.issueInvoice(RetainerInv)
 
     DISPLAY "Freelancer Financial Dashboard Overview"
@@ -564,8 +577,6 @@ BEGIN
 
 END
 STOP
-
-
 
 
 
