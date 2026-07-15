@@ -306,119 +306,119 @@ STOP
 310
 
 
+CLASS SafetyInspectionLog
+    PRIVATE ATTRIBUTES:
+        inspectionDate : String
+        outcome : String
+
+    CONSTRUCTOR(iDate, result)
+        SET this.inspectionDate TO iDate
+        SET this.outcome TO result
+    ENDCONSTRUCTOR
+ENDCLASS
+
+CLASS Ride
+    PRIVATE ATTRIBUTES:
+        rideName : String
+        location : String
+        inspectionLog : SafetyInspectionLog
+
+    CONSTRUCTOR(name, loc, logObj)
+        SET this.rideName TO name
+        SET this.location TO loc
+        SET this.inspectionLog TO logObj
+    ENDCONSTRUCTOR
+
+    ABSTRACT METHOD calculateWaitTime(peopleInLineCount)
+ENDCLASS
+
+CLASS WaterRide INHERITS Ride
+    PRIVATE ATTRIBUTES:
+        fitsPerBoat : Integer
+        rideCycleTimeMinutes : Integer
+        safetyLoadingDelayMinutes : Integer
+
+    CONSTRUCTOR(name, loc, logObj, fits, cycle, delay)
+        CALL SUPER(name, loc, logObj)
+        SET this.fitsPerBoat TO fits
+        SET this.rideCycleTimeMinutes TO cycle
+        SET this.safetyLoadingDelayMinutes TO delay
+    ENDCONSTRUCTOR
+
+    METHOD calculateWaitTime(peopleInLineCount)
+        IF this.fitsPerBoat Equals 0 THEN
+            RETURN 0.0
+        ENDIF
+        SET totalBoatsNeeded TO CALL MATH_CEIL(peopleInLineCount / this.fitsPerBoat)
+        RETURN (totalBoatsNeeded * this.rideCycleTimeMinutes) + this.safetyLoadingDelayMinutes
+    ENDMETHOD
+ENDCLASS
+
+CLASS RollerCoaster INHERITS Ride
+    PRIVATE ATTRIBUTES:
+        fitsPerTrainCar : Integer
+        rideCycleTimeMinutes : Integer
+
+    CONSTRUCTOR(name, loc, logObj, fits, cycle)
+        CALL SUPER(name, loc, logObj)
+        SET this.fitsPerTrainCar TO fits
+        SET this.rideCycleTimeMinutes TO cycle
+    ENDCONSTRUCTOR
+
+    METHOD getFitsPerTrainCar()
+        RETURN this.fitsPerTrainCar
+    ENDMETHOD
+
+    METHOD getRideCycleTimeMinutes()
+        RETURN this.rideCycleTimeMinutes
+    ENDMETHOD
+
+    METHOD calculateWaitTime(peopleInLineCount)
+        IF this.fitsPerTrainCar Equals 0 THEN
+            RETURN 0.0
+        ENDIF
+        SET totalTrainsNeeded TO CALL MATH_CEIL(peopleInLineCount / this.fitsPerTrainCar)
+        RETURN totalTrainsNeeded * this.rideCycleTimeMinutes
+    ENDMETHOD
+ENDCLASS
+
+CLASS VIPAccessRide INHERITS RollerCoaster
+    PRIVATE ATTRIBUTES:
+        vipPassMultiplier : Double
+
+    CONSTRUCTOR(name, loc, logObj, fits, cycle, multiplier)
+        CALL SUPER(name, loc, logObj, fits, cycle)
+        SET this.vipPassMultiplier TO multiplier
+    ENDCONSTRUCTOR
+
+    METHOD calculateWaitTime(peopleInLineCount)
+        SET standardWaitTime TO CALL SUPER_METHOD_calculateWaitTime(peopleInLineCount)
+        RETURN standardWaitTime * this.vipPassMultiplier
+    ENDMETHOD
+ENDCLASS
+
+CLASS Park
+    PRIVATE ATTRIBUTES:
+        parkName : String
+        ridesList : LIST<Ride>
+
+    CONSTRUCTOR(name)
+        SET this.parkName TO name
+        SET this.ridesList TO LIST []
+    ENDCONSTRUCTOR
+
+    METHOD operateNewRide(rideObj)
+        ADD rideObj TO this.ridesList
+    ENDMETHOD
+ENDCLASS
+
 START
 BEGIN
 
-    CLASS SafetyInspectionLog
-        PRIVATE ATTRIBUTES:
-            inspectionDate : String
-            outcome : String
-
-        CONSTRUCTOR(iDate, result)
-            SET this.inspectionDate TO iDate
-            SET this.outcome TO result
-        ENDCONSTRUCTOR
-    ENDCLASS
-
-    CLASS Ride
-        PRIVATE ATTRIBUTES:
-            rideName : String
-            location : String
-            inspectionLog : SafetyInspectionLog
-
-        CONSTRUCTOR(name, loc, logObj)
-            SET this.rideName TO name
-            SET this.location TO loc
-            SET this.inspectionLog TO logObj
-        ENDCONSTRUCTOR
-
-        ABSTRACT METHOD calculateWaitTime(peopleInLineCount)
-    ENDCLASS
-
-    CLASS WaterRide EXTENDS Ride
-        PRIVATE ATTRIBUTES:
-            fitsPerBoat : Integer
-            rideCycleTimeMinutes : Integer
-            safetyLoadingDelayMinutes : Integer
-
-        CONSTRUCTOR(name, loc, logObj, fits, cycle, delay)
-            CALL SUPER_CONSTRUCTOR(name, loc, logObj)
-            SET this.fitsPerBoat TO fits
-            SET this.rideCycleTimeMinutes TO cycle
-            SET this.safetyLoadingDelayMinutes TO delay
-        ENDCONSTRUCTOR
-
-        METHOD calculateWaitTime(peopleInLineCount)
-            IF fitsPerBoat Equals 0 THEN
-                RETURN 0.0
-            ENDIF
-            SET totalBoatsNeeded TO peopleInLineCount / fitsPerBoat
-            RETURN (totalBoatsNeeded * rideCycleTimeMinutes) + safetyLoadingDelayMinutes
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS RollerCoaster EXTENDS Ride
-        PRIVATE ATTRIBUTES:
-            fitsPerTrainCar : Integer
-            rideCycleTimeMinutes : Integer
-
-        CONSTRUCTOR(name, loc, logObj, fits, cycle)
-            CALL SUPER_CONSTRUCTOR(name, loc, logObj)
-            SET this.fitsPerTrainCar TO fits
-            SET this.rideCycleTimeMinutes TO cycle
-        ENDCONSTRUCTOR
-
-        METHOD getFitsPerTrainCar()
-            RETURN this.fitsPerTrainCar
-        ENDMETHOD
-
-        METHOD getRideCycleTimeMinutes()
-            RETURN this.rideCycleTimeMinutes
-        ENDMETHOD
-
-        METHOD calculateWaitTime(peopleInLineCount)
-            IF fitsPerTrainCar Equals 0 THEN
-                RETURN 0.0
-            ENDIF
-            SET totalTrainsNeeded TO peopleInLineCount / fitsPerTrainCar
-            RETURN totalTrainsNeeded * rideCycleTimeMinutes
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS VIPAccessRide EXTENDS RollerCoaster
-        PRIVATE ATTRIBUTES:
-            vipPassMultiplier : Double
-
-        CONSTRUCTOR(name, loc, logObj, fits, cycle, multiplier)
-            CALL SUPER_CONSTRUCTOR(name, loc, logObj, fits, cycle)
-            SET this.vipPassMultiplier TO multiplier
-        ENDCONSTRUCTOR
-
-        METHOD calculateWaitTime(peopleInLineCount)
-            SET standardWaitTime TO CALL SUPER_METHOD_calculateWaitTime(peopleInLineCount)
-            RETURN standardWaitTime * vipPassMultiplier
-        ENDMETHOD
-    ENDCLASS
-
-    CLASS Park
-        PRIVATE ATTRIBUTES:
-            parkName : String
-            ridesList : List of Ride
-
-        CONSTRUCTOR(name)
-            SET this.parkName TO name
-            SET this.ridesList TO LIST []
-        ENDCONSTRUCTOR
-
-        METHOD operateNewRide(rideObj)
-            ADD rideObj TO this.ridesList
-        ENDMETHOD
-    ENDCLASS
-
-    CREATE CoreLog FROM SafetyInspectionLog("2026-07-14", "Passed")
-    CREATE Coaster_1 FROM VIPAccessRide("Chrono Coaster", "Zone A", CoreLog, 20, 5, 0.4)
+    CREATE OBJECT CoreLog OF SafetyInspectionLog("2026-07-14", "Passed")
+    CREATE OBJECT Coaster_1 OF VIPAccessRide("Chrono Coaster", "Zone A", CoreLog, 24, 5, 0.4)
     
-    CREATE MontherPark FROM Park("Oman Magic World")
+    CREATE OBJECT MontherPark OF Park("Oman Magic World")
     CALL MontherPark.operateNewRide(Coaster_1)
 
     DISPLAY "Theme Park Dynamic Control Station"
